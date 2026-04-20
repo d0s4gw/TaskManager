@@ -56,8 +56,9 @@ const Auth = () => {
 
       <form onSubmit={handleEmailAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div className="form-group" style={{ textAlign: 'left', marginBottom: '0' }}>
-          <label>Email</label>
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             type="email"
             className="form-input"
             value={email}
@@ -66,8 +67,9 @@ const Auth = () => {
           />
         </div>
         <div className="form-group" style={{ textAlign: 'left', marginBottom: '0' }}>
-          <label>Password</label>
+          <label htmlFor="password">Password</label>
           <input
+            id="password"
             type="password"
             className="form-input"
             value={password}

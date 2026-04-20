@@ -1,29 +1,34 @@
 const admin = require('firebase-admin');
-const path = require('path');
+const mongoose = require('mongoose');
+const logger = require('./utils/logger');
 require('dotenv').config();
 
-// In tests, we might want to skip initialization or initialize differently,
-// but for now, we'll try to initialize normally if credentials exist.
-const isTest = process.env.NODE_ENV === 'test';
-
-if (!isTest) {
-  try {
-    // This will automatically pick up GOOGLE_APPLICATION_CREDENTIALS
-    // from the environment (or .env) if set.
+// Initialize Firebase Admin for Authentication
+try {
+  if (admin.apps.length === 0) {
     admin.initializeApp({
       credential: admin.credential.applicationDefault()
     });
-    console.log('Connected to Firestore database.');
-  } catch (error) {
-    console.error('Error connecting to Firestore database:', error.message);
-    console.error('Make sure GOOGLE_APPLICATION_CREDENTIALS is set in your .env file or environment.');
+    logger.info('Firebase Admin initialized.');
   }
-} else {
-  // Test configuration if needed
-  // For tests we could use the emulator
-  console.log('Test mode: skipping actual Firestore connection.');
+} catch (error) {
+  logger.error({ err: error }, 'Error initializing Firebase Admin');
 }
 
-const db = admin.apps.length ? admin.firestore() : null;
+// Initialize Mongoose for MongoDB API
+const mongoUri = process.env.MONGODB_URI;
+
+if (!mongoUri) {
+  logger.error('MONGODB_URI is not set in .env file.');
+} else {
+  mongoose.connect(mongoUri)
+    .then(() => logger.info('Connected to Firestore MongoDB API.'))
+    .catch(err => logger.error({ err }, 'Error connecting to Firestore MongoDB API'));
+}
+
+const db = {
+  firestore: admin.apps.length ? admin.firestore() : null,
+  mongoose: mongoose.connection
+};
 
 module.exports = db;

@@ -10,55 +10,71 @@ jest.mock('../middleware/auth', () => {
   };
 });
 
-const taskRoutes = require('../routes/tasks');
-
-// Mock the database
-jest.mock('../database', () => {
+// Mock the Task model
+jest.mock('../models/Task', () => {
   let mockData = {};
   
-  return {
-    collection: jest.fn(() => ({
-      where: jest.fn(() => ({
-        orderBy: jest.fn().mockReturnThis(),
-        get: jest.fn(() => {
-          const docs = Object.entries(mockData)
-            .filter(([id, data]) => data.userId === 'test_user_123')
-            .map(([id, data]) => ({
-              id,
-              data: () => data
-            }));
-          docs.forEach = function(cb) {
-            for (let i = 0; i < this.length; i++) cb(this[i]);
-          };
-          return Promise.resolve(docs);
-        })
-      })),
-      add: jest.fn((data) => {
-        const id = 'test_id_' + Date.now();
-        mockData[id] = data;
-        return Promise.resolve({ id });
-      }),
-      doc: jest.fn((id) => ({
-        get: jest.fn(() => {
-          if (!mockData[id]) return Promise.resolve({ exists: false });
-          return Promise.resolve({ 
-            exists: true, 
-            id, 
-            data: () => mockData[id] 
-          });
+  function MockTask(data) {
+    this._id = 'test_id_' + Date.now();
+    this.toObject = () => ({ _id: this._id, ...data });
+    this.save = jest.fn().mockResolvedValue(this);
+    // Assign properties to the instance
+    Object.assign(this, data);
+  }
+
+  MockTask.find = jest.fn().mockImplementation((query) => {
+    return Promise.resolve(Object.values(mockData).filter(t => t.userId === query.userId));
+  });
+
+  MockTask.findOne = jest.fn().mockImplementation((query) => {
+    const task = mockData[query._id];
+    if (task && task.userId === query.userId) {
+      return Promise.resolve({
+        ...task,
+        save: jest.fn().mockImplementation(function() {
+          mockData[this._id] = { ...this };
+          return Promise.resolve(this);
         }),
-        update: jest.fn((data) => {
-          mockData[id] = { ...mockData[id], ...data };
-          return Promise.resolve();
-        }),
-        delete: jest.fn(() => {
-          delete mockData[id];
-          return Promise.resolve();
-        })
-      }))
-    }))
+        toObject: function() { return { ...this }; }
+      });
+    }
+    return Promise.resolve(null);
+  });
+
+  MockTask.findOneAndDelete = jest.fn().mockImplementation((query) => {
+    const task = mockData[query._id];
+    if (task && task.userId === query.userId) {
+      delete mockData[query._id];
+      return Promise.resolve(task);
+    }
+    return Promise.resolve(null);
+  });
+
+  // For the 'new Task()' usage
+  const TaskConstructor = function(data) {
+    const id = 'test_id_' + Date.now();
+    const task = { 
+      _id: id, 
+      ...data, 
+      toObject: function() { return { ...this }; },
+      save: jest.fn().mockImplementation(function() {
+        mockData[this._id] = { ...this };
+        return Promise.resolve(this);
+      })
+    };
+    return task;
   };
+
+  // Merge everything into a single mock object
+  const mock = TaskConstructor;
+  mock.find = MockTask.find;
+  mock.findOne = MockTask.findOne;
+  mock.findOneAndDelete = MockTask.findOneAndDelete;
+  
+  return mock;
 });
+
+const taskRoutes = require('../routes/tasks');
 
 const app = express();
 app.use(express.json());
@@ -69,7 +85,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message });
 });
 
-describe('Tasks API with Auth', () => {
+describe('Tasks API with Auth (Mongoose Mock)', () => {
   let createdTaskId;
 
   it('should create a new task attached to the user', async () => {
@@ -82,7 +98,7 @@ describe('Tasks API with Auth', () => {
     
     expect(res.statusCode).toBe(201);
     expect(res.body.title).toBe('Auth Test Task');
-    expect(res.body.userId).toBe('test_user_123'); // Should be attached by routes/tasks.js
+    expect(res.body.userId).toBe('test_user_123');
     
     createdTaskId = res.body.id;
   });

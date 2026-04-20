@@ -1,19 +1,27 @@
 # TaskManager Backend
 
-This is the Express API that powers the TaskManager application. It uses a local SQLite database (`tasks.db`) for persistence.
+This is the Express API that powers the TaskManager application. It is a cloud-native service designed for serverless deployment.
 
-## Features
-- **Security**: Uses `helmet` for secure HTTP headers.
-- **Validation**: Uses `express-validator` to strictly type-check incoming data payloads.
-- **Persistence**: SQLite database with parameterized queries to prevent SQL injection.
+## Tech Stack
+- **Database**: Google Cloud Firestore (via MongoDB API)
+- **ODM**: Mongoose
+- **Authentication**: Firebase Admin SDK (JWT Verification)
+- **Security**: `helmet` and `cors`
+- **Validation**: `express-validator`
+
+## Setup
+1. **Service Account**: Place your Google Cloud `service-account.json` in this directory.
+2. **Environment**: Create a `.env` file with `MONGODB_URI` and `GOOGLE_APPLICATION_CREDENTIALS`.
+3. **Install**: `npm install`
+4. **Run**: `npm start`
 
 ## Scripts
-- `node server.js`: Starts the server on port 3001.
-- `npm test`: Runs the Jest integration test suite using an isolated, in-memory `:memory:` SQLite database.
+- `npm start`: Runs `node server.js`.
+- `npm test`: Runs the Jest integration test suite with Firebase Auth mocking.
 
 ## API Endpoints
-All endpoints are prefixed with `/api/tasks`.
-- `GET /` - Retrieve all tasks
-- `POST /` - Create a new task
-- `PUT /:id` - Update a task (edit details or toggle completion)
-- `DELETE /:id` - Delete a task
+All endpoints require a `Bearer <token>` in the `Authorization` header.
+- `GET /api/tasks`: Retrieve tasks for the authenticated user.
+- `POST /api/tasks`: Create a new task.
+- `PUT /api/tasks/:id`: Update a task (owner only).
+- `DELETE /api/tasks/:id`: Delete a task (owner only).

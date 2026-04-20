@@ -1,17 +1,24 @@
 # TaskManager Frontend
 
-A React Single Page Application (SPA) built with Vite, focusing on a clean, responsive, and maximally readable interface.
+A React Single Page Application (SPA) built with Vite, secured with Firebase Authentication.
 
-## Features
-- **Modern React**: Built with React 19 hooks and functional components.
-- **Styling**: Vanilla CSS (`index.css`) designed for high contrast and spacing, avoiding CSS framework clutter.
-- **Testing**: Vitest + React Testing Library for fast, DOM-based component testing.
+## Tech Stack
+- **Framework**: React 19
+- **Build Tool**: Vite
+- **Authentication**: Firebase Client SDK
+- **Icons**: Lucide React
+- **Testing**: Vitest + React Testing Library
+
+## Setup
+1. `npm install`
+2. Create a `.env` file with your `VITE_FIREBASE_*` credentials.
+3. `npm run dev`
 
 ## Scripts
-- `npm run dev`: Starts the Vite development server with hot-module replacement.
-- `npm run build`: Compiles the application for production.
+- `npm run dev`: Starts the Vite development server.
+- `npm run build`: Compiles for production (output to `dist/`).
 - `npm test`: Runs the Vitest test suite.
-- `npm run lint`: Runs ESLint.
 
 ## Development Notes
-The Vite development server is configured to proxy all requests matching `/api` directly to `http://localhost:3001` to avoid CORS issues during local development.
+- **Authentication**: Uses `onAuthStateChanged` in `App.jsx` to manage user state.
+- **API Proxy**: Local development proxies `/api` to `http://localhost:3001`. In production, this is handled via **Firebase Hosting** rewrites.

@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param, validationResult } = require('express-validator');
-const db = require('../database');
+const Task = require('../models/Task');
 const requireAuth = require('../middleware/auth');
 
 const router = express.Router();
@@ -20,16 +20,8 @@ const handleValidationErrors = (req, res, next) => {
 // Get all tasks for the logged-in user
 router.get('/', async (req, res, next) => {
   try {
-    const tasksSnapshot = await db.collection('tasks')
-      .where('userId', '==', req.user.uid)
-      .orderBy('created_at', 'desc')
-      .get();
-      
-    const tasks = [];
-    tasksSnapshot.forEach((doc) => {
-      tasks.push({ id: doc.id, ...doc.data() });
-    });
-    res.json({ tasks });
+    const tasks = await Task.find({ userId: req.user.uid });
+    res.json({ tasks: tasks.map(t => ({ id: t._id, ...t.toObject(), _id: undefined })) });
   } catch (error) {
     next(error);
   }
@@ -47,22 +39,22 @@ router.post('/', [
   try {
     const { title, description, due_date, priority, category } = req.body;
     
-    const newTask = {
+    const newTask = new Task({
       title,
       description: description || null,
       due_date: due_date || null,
       priority: priority || null,
       category: category || null,
       completed: false,
-      created_at: new Date().toISOString(),
-      userId: req.user.uid // Attach the authenticated user's ID
-    };
+      userId: req.user.uid
+    });
     
-    const docRef = await db.collection('tasks').add(newTask);
+    const savedTask = await newTask.save();
     
     res.status(201).json({
-      id: docRef.id,
-      ...newTask
+      id: savedTask._id,
+      ...savedTask.toObject(),
+      _id: undefined
     });
   } catch (error) {
     next(error);
@@ -83,32 +75,25 @@ router.put('/:id', [
   try {
     const { id } = req.params;
     
-    const docRef = db.collection('tasks').doc(id);
-    const doc = await docRef.get();
+    const task = await Task.findOne({ _id: id, userId: req.user.uid });
     
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'Task not found' });
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found or access denied' });
     }
     
-    // Ensure the task belongs to the user
-    if (doc.data().userId !== req.user.uid) {
-      return res.status(403).json({ error: 'Forbidden: You do not have permission to modify this task' });
-    }
+    if (req.body.title !== undefined) task.title = req.body.title;
+    if (req.body.completed !== undefined) task.completed = req.body.completed;
+    if (req.body.description !== undefined) task.description = req.body.description;
+    if (req.body.due_date !== undefined) task.due_date = req.body.due_date;
+    if (req.body.priority !== undefined) task.priority = req.body.priority;
+    if (req.body.category !== undefined) task.category = req.body.category;
     
-    const updateData = {};
-    if (req.body.title !== undefined) updateData.title = req.body.title;
-    if (req.body.completed !== undefined) updateData.completed = req.body.completed;
-    if (req.body.description !== undefined) updateData.description = req.body.description;
-    if (req.body.due_date !== undefined) updateData.due_date = req.body.due_date;
-    if (req.body.priority !== undefined) updateData.priority = req.body.priority;
-    if (req.body.category !== undefined) updateData.category = req.body.category;
+    const updatedTask = await task.save();
     
-    await docRef.update(updateData);
-    
-    const updatedDoc = await docRef.get();
     res.json({
-      id: updatedDoc.id,
-      ...updatedDoc.data()
+      id: updatedTask._id,
+      ...updatedTask.toObject(),
+      _id: undefined
     });
   } catch (error) {
     next(error);
@@ -122,19 +107,12 @@ router.delete('/:id', [
 ], async (req, res, next) => {
   try {
     const { id } = req.params;
-    const docRef = db.collection('tasks').doc(id);
-    const doc = await docRef.get();
+    const task = await Task.findOneAndDelete({ _id: id, userId: req.user.uid });
     
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'Task not found' });
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found or access denied' });
     }
     
-    // Ensure the task belongs to the user
-    if (doc.data().userId !== req.user.uid) {
-      return res.status(403).json({ error: 'Forbidden: You do not have permission to delete this task' });
-    }
-    
-    await docRef.delete();
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
     next(error);

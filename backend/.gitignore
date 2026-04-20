@@ -2,3 +2,5 @@ node_modules/
 tasks.db
 coverage/
 .DS_Store
+.env
+service-account.json
