@@ -1,21 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
-import { CheckSquare, AlertCircle } from 'lucide-react';
+import Auth from './components/Auth';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { CheckSquare, AlertCircle, LogOut } from 'lucide-react';
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchTasks();
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+      if (currentUser) {
+        fetchTasks(currentUser);
+      } else {
+        setTasks([]);
+      }
+    });
+    return unsubscribe;
   }, []);
 
-  const fetchTasks = async () => {
+  const getAuthHeaders = async (currentUser = user) => {
+    if (!currentUser) return {};
+    const token = await currentUser.getIdToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
+
+  const fetchTasks = async (currentUser) => {
     try {
+      setLoading(true);
       setError(null);
-      const res = await fetch('/api/tasks');
+      const headers = await getAuthHeaders(currentUser);
+      const res = await fetch('/api/tasks', { headers });
       if (!res.ok) throw new Error('Failed to fetch tasks');
       const data = await res.json();
       if (data.tasks) {
@@ -32,9 +58,10 @@ function App() {
   const handleAddTask = async (taskData) => {
     try {
       setError(null);
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(taskData)
       });
       if (!res.ok) throw new Error('Failed to create task');
@@ -56,9 +83,10 @@ function App() {
     
     try {
       setError(null);
+      const headers = await getAuthHeaders();
       const res = await fetch(`/api/tasks/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ completed })
       });
       if (!res.ok) throw new Error('Failed to update task');
@@ -75,9 +103,10 @@ function App() {
     
     try {
       setError(null);
+      const headers = await getAuthHeaders();
       const res = await fetch(`/api/tasks/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updatedData)
       });
       if (!res.ok) throw new Error('Failed to update task');
@@ -94,8 +123,13 @@ function App() {
     
     try {
       setError(null);
+      const headers = await getAuthHeaders();
+      // fetch DELETE requires an object with headers if we pass headers, but no body
       const res = await fetch(`/api/tasks/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': headers['Authorization'] // Content-Type not strictly needed for DELETE
+        }
       });
       if (!res.ok) throw new Error('Failed to delete task');
     } catch (err) {
@@ -105,6 +139,24 @@ function App() {
     }
   };
 
+  if (authLoading) {
+    return <div className="container"><div className="loading">Loading...</div></div>;
+  }
+
+  if (!user) {
+    return (
+      <div className="container">
+        <header className="header" style={{ justifyContent: 'center' }}>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <CheckSquare size={36} color="var(--accent-color)" />
+            TaskManager
+          </h1>
+        </header>
+        <Auth />
+      </div>
+    );
+  }
+
   return (
     <div className="container">
       <header className="header">
@@ -112,6 +164,13 @@ function App() {
           <CheckSquare size={36} color="var(--accent-color)" />
           TaskManager
         </h1>
+        <button 
+          onClick={() => signOut(auth)} 
+          className="btn btn-secondary btn-icon" 
+          title="Sign Out"
+        >
+          <LogOut size={20} />
+        </button>
       </header>
 
       <main>

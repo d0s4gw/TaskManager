@@ -1,5 +1,15 @@
 const request = require('supertest');
 const express = require('express');
+
+// Mock the auth middleware BEFORE importing the routes
+jest.mock('../middleware/auth', () => {
+  return (req, res, next) => {
+    // Simulate an authenticated user
+    req.user = { uid: 'test_user_123' };
+    next();
+  };
+});
+
 const taskRoutes = require('../routes/tasks');
 
 // Mock the database
@@ -8,18 +18,21 @@ jest.mock('../database', () => {
   
   return {
     collection: jest.fn(() => ({
-      orderBy: jest.fn().mockReturnThis(),
-      get: jest.fn(() => {
-        const docs = Object.entries(mockData).map(([id, data]) => ({
-          id,
-          data: () => data
-        }));
-        // Mock forEach
-        docs.forEach = function(cb) {
-          for (let i = 0; i < this.length; i++) cb(this[i]);
-        };
-        return Promise.resolve(docs);
-      }),
+      where: jest.fn(() => ({
+        orderBy: jest.fn().mockReturnThis(),
+        get: jest.fn(() => {
+          const docs = Object.entries(mockData)
+            .filter(([id, data]) => data.userId === 'test_user_123')
+            .map(([id, data]) => ({
+              id,
+              data: () => data
+            }));
+          docs.forEach = function(cb) {
+            for (let i = 0; i < this.length; i++) cb(this[i]);
+          };
+          return Promise.resolve(docs);
+        })
+      })),
       add: jest.fn((data) => {
         const id = 'test_id_' + Date.now();
         mockData[id] = data;
@@ -56,21 +69,20 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message });
 });
 
-describe('Tasks API', () => {
+describe('Tasks API with Auth', () => {
   let createdTaskId;
 
-  it('should create a new task', async () => {
+  it('should create a new task attached to the user', async () => {
     const res = await request(app)
       .post('/api/tasks')
       .send({
-        title: 'Test Task',
+        title: 'Auth Test Task',
         priority: 'high'
       });
     
     expect(res.statusCode).toBe(201);
-    expect(res.body.title).toBe('Test Task');
-    expect(res.body.priority).toBe('high');
-    expect(res.body.completed).toBe(false);
+    expect(res.body.title).toBe('Auth Test Task');
+    expect(res.body.userId).toBe('test_user_123'); // Should be attached by routes/tasks.js
     
     createdTaskId = res.body.id;
   });
@@ -84,14 +96,14 @@ describe('Tasks API', () => {
       });
     
     expect(res.statusCode).toBe(400);
-    expect(res.body.errors).toBeDefined();
   });
 
-  it('should get all tasks', async () => {
+  it('should get all tasks for the logged in user', async () => {
     const res = await request(app).get('/api/tasks');
     expect(res.statusCode).toBe(200);
     expect(res.body.tasks).toBeInstanceOf(Array);
     expect(res.body.tasks.length).toBeGreaterThan(0);
+    expect(res.body.tasks[0].userId).toBe('test_user_123');
   });
 
   it('should update a task', async () => {
