@@ -1,7 +1,51 @@
 const request = require('supertest');
 const express = require('express');
 const taskRoutes = require('../routes/tasks');
-const db = require('../database');
+
+// Mock the database
+jest.mock('../database', () => {
+  let mockData = {};
+  
+  return {
+    collection: jest.fn(() => ({
+      orderBy: jest.fn().mockReturnThis(),
+      get: jest.fn(() => {
+        const docs = Object.entries(mockData).map(([id, data]) => ({
+          id,
+          data: () => data
+        }));
+        // Mock forEach
+        docs.forEach = function(cb) {
+          for (let i = 0; i < this.length; i++) cb(this[i]);
+        };
+        return Promise.resolve(docs);
+      }),
+      add: jest.fn((data) => {
+        const id = 'test_id_' + Date.now();
+        mockData[id] = data;
+        return Promise.resolve({ id });
+      }),
+      doc: jest.fn((id) => ({
+        get: jest.fn(() => {
+          if (!mockData[id]) return Promise.resolve({ exists: false });
+          return Promise.resolve({ 
+            exists: true, 
+            id, 
+            data: () => mockData[id] 
+          });
+        }),
+        update: jest.fn((data) => {
+          mockData[id] = { ...mockData[id], ...data };
+          return Promise.resolve();
+        }),
+        delete: jest.fn(() => {
+          delete mockData[id];
+          return Promise.resolve();
+        })
+      }))
+    }))
+  };
+});
 
 const app = express();
 app.use(express.json());
@@ -10,15 +54,6 @@ app.use('/api/tasks', taskRoutes);
 // Mock error handler
 app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message });
-});
-
-beforeAll((done) => {
-  // Let the DB initialize (in memory)
-  setTimeout(done, 100);
-});
-
-afterAll((done) => {
-  db.close(done);
 });
 
 describe('Tasks API', () => {

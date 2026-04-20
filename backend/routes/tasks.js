@@ -14,12 +14,17 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 // Get all tasks
-router.get('/', (req, res, next) => {
-  db.all('SELECT * FROM tasks ORDER BY created_at DESC', [], (err, rows) => {
-    if (err) return next(err);
-    const tasks = rows.map(row => ({ ...row, completed: !!row.completed }));
+router.get('/', async (req, res, next) => {
+  try {
+    const tasksSnapshot = await db.collection('tasks').orderBy('created_at', 'desc').get();
+    const tasks = [];
+    tasksSnapshot.forEach((doc) => {
+      tasks.push({ id: doc.id, ...doc.data() });
+    });
     res.json({ tasks });
-  });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Create a task
@@ -30,29 +35,34 @@ router.post('/', [
   body('priority').optional().isIn(['low', 'medium', 'high', 'none', '']).withMessage('Invalid priority level'),
   body('category').optional().isString().trim(),
   handleValidationErrors
-], (req, res, next) => {
-  const { title, description, due_date, priority, category } = req.body;
-  
-  const sql = `INSERT INTO tasks (title, description, due_date, priority, category) VALUES (?, ?, ?, ?, ?)`;
-  const params = [title, description, due_date, priority, category];
-  
-  db.run(sql, params, function(err) {
-    if (err) return next(err);
-    res.status(201).json({
-      id: this.lastID,
+], async (req, res, next) => {
+  try {
+    const { title, description, due_date, priority, category } = req.body;
+    
+    const newTask = {
       title,
+      description: description || null,
+      due_date: due_date || null,
+      priority: priority || null,
+      category: category || null,
       completed: false,
-      description,
-      due_date,
-      priority,
-      category
+      created_at: new Date().toISOString()
+    };
+    
+    const docRef = await db.collection('tasks').add(newTask);
+    
+    res.status(201).json({
+      id: docRef.id,
+      ...newTask
     });
-  });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Update a task (edit or complete)
 router.put('/:id', [
-  param('id').isInt().withMessage('Invalid task ID'),
+  param('id').isString().withMessage('Invalid task ID'),
   body('title').optional().trim().notEmpty().withMessage('Title cannot be empty').isLength({ max: 255 }),
   body('completed').optional().isBoolean().withMessage('Completed must be a boolean'),
   body('description').optional().isString().trim(),
@@ -60,49 +70,52 @@ router.put('/:id', [
   body('priority').optional().isIn(['low', 'medium', 'high', 'none', '']).withMessage('Invalid priority level'),
   body('category').optional().isString().trim(),
   handleValidationErrors
-], (req, res, next) => {
-  const { id } = req.params;
-  const { title, completed, description, due_date, priority, category } = req.body;
-  
-  db.get('SELECT * FROM tasks WHERE id = ?', [id], (err, row) => {
-    if (err) return next(err);
-    if (!row) return res.status(404).json({ error: 'Task not found' });
+], async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData = {};
     
-    const updateTitle = title !== undefined ? title : row.title;
-    const updateCompleted = completed !== undefined ? (completed ? 1 : 0) : row.completed;
-    const updateDescription = description !== undefined ? description : row.description;
-    const updateDueDate = due_date !== undefined ? due_date : row.due_date;
-    const updatePriority = priority !== undefined ? priority : row.priority;
-    const updateCategory = category !== undefined ? category : row.category;
+    // Only update fields that are provided
+    if (req.body.title !== undefined) updateData.title = req.body.title;
+    if (req.body.completed !== undefined) updateData.completed = req.body.completed;
+    if (req.body.description !== undefined) updateData.description = req.body.description;
+    if (req.body.due_date !== undefined) updateData.due_date = req.body.due_date;
+    if (req.body.priority !== undefined) updateData.priority = req.body.priority;
+    if (req.body.category !== undefined) updateData.category = req.body.category;
     
-    const sql = `UPDATE tasks SET title = ?, completed = ?, description = ?, due_date = ?, priority = ?, category = ? WHERE id = ?`;
-    const params = [updateTitle, updateCompleted, updateDescription, updateDueDate, updatePriority, updateCategory, id];
+    const docRef = db.collection('tasks').doc(id);
+    const doc = await docRef.get();
     
-    db.run(sql, params, function(err) {
-      if (err) return next(err);
-      res.json({
-        id: parseInt(id),
-        title: updateTitle,
-        completed: !!updateCompleted,
-        description: updateDescription,
-        due_date: updateDueDate,
-        priority: updatePriority,
-        category: updateCategory
-      });
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    await docRef.update(updateData);
+    
+    // Return the updated document
+    const updatedDoc = await docRef.get();
+    res.json({
+      id: updatedDoc.id,
+      ...updatedDoc.data()
     });
-  });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Delete a task
 router.delete('/:id', [
-  param('id').isInt().withMessage('Invalid task ID'),
+  param('id').isString().withMessage('Invalid task ID'),
   handleValidationErrors
-], (req, res, next) => {
-  const { id } = req.params;
-  db.run('DELETE FROM tasks WHERE id = ?', id, function(err) {
-    if (err) return next(err);
-    res.json({ message: 'Task deleted successfully', changes: this.changes });
-  });
+], async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await db.collection('tasks').doc(id).delete();
+    
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;

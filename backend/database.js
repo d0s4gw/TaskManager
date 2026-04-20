@@ -1,26 +1,29 @@
-const sqlite3 = require('sqlite3').verbose();
+const admin = require('firebase-admin');
 const path = require('path');
+require('dotenv').config();
 
+// In tests, we might want to skip initialization or initialize differently,
+// but for now, we'll try to initialize normally if credentials exist.
 const isTest = process.env.NODE_ENV === 'test';
-const dbPath = isTest ? ':memory:' : path.resolve(__dirname, 'tasks.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error connecting to SQLite database:', err.message);
-  } else {
-    console.log('Connected to the SQLite database.');
-    db.run(`
-      CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        completed BOOLEAN NOT NULL DEFAULT 0,
-        description TEXT,
-        due_date TEXT,
-        priority TEXT,
-        category TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+
+if (!isTest) {
+  try {
+    // This will automatically pick up GOOGLE_APPLICATION_CREDENTIALS
+    // from the environment (or .env) if set.
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault()
+    });
+    console.log('Connected to Firestore database.');
+  } catch (error) {
+    console.error('Error connecting to Firestore database:', error.message);
+    console.error('Make sure GOOGLE_APPLICATION_CREDENTIALS is set in your .env file or environment.');
   }
-});
+} else {
+  // Test configuration if needed
+  // For tests we could use the emulator
+  console.log('Test mode: skipping actual Firestore connection.');
+}
+
+const db = admin.apps.length ? admin.firestore() : null;
 
 module.exports = db;
