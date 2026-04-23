@@ -191,3 +191,11 @@ resource "google_service_account_iam_member" "wif_user" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/d0s4gw/TaskManager"
 }
+# 10. Allow Unauthenticated Access
+resource "google_cloud_run_v2_service_iam_member" "public_access" {
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.server.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
