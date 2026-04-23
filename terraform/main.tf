@@ -137,7 +137,7 @@ resource "google_cloud_run_v2_service" "server" {
     }
 
     containers {
-      image = "gcr.io/${var.project_id}/server:latest" # Placeholder, updated via CI/CD
+      image = "us-docker.pkg.dev/cloudrun/container/hello" # Placeholder for initial bootstrap
       
       resources {
         limits = {
