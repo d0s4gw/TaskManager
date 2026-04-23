@@ -20,6 +20,19 @@ Push to the `main` branch to trigger:
 2. **Build**: Cloud Build compiles the Logic Tier with shared dependencies.
 3. **Deploy**: Automatic rollout to Cloud Run and Firebase Hosting.
 
+## 🛠️ Local Development
+
+### 1. Configure Environment
+Create `.env` files in `/server` and `/web` based on the provided `.env.example` templates.
+
+### 2. Run Locally
+- **Server**: `cd server && npm run dev`
+- **Web**: `cd web && npm run dev`
+
+### 3. Run Tests
+- **Server**: `cd server && npm test` (includes coverage report)
+- **Web**: `cd web && npm test` (runs Vitest suite)
+
 ## 🔐 Security Standards
 - **Workload Identity Federation**: Zero static keys for deployment.
 - **Least Privilege**: Service-specific IAM identities.

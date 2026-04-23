@@ -25,7 +25,7 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 - **Design System**: Stick to the Tailwind-based minimalist design established in `web/src/app/page.tsx`. Use the `indigo` color family for primary actions.
 
 ## 🛠 Local Development
-- **Backend**: `npm run dev` in `server/`.
-- **Frontend**: `npm run dev` in `web/`.
+- **Backend**: `npm run dev` in `server/`. Run tests with `npm test`.
+- **Frontend**: `npm run dev` in `web/`. Run tests with `npm test`.
 - **Mobile**: `flutter run` in `mobile/`.
-- **Local API**: To test the web-to-server connection locally, you may need to update the fetch URL in `page.tsx` from `/api/health` to `http://localhost:8080/health` until the proxy is fully configured for dev mode.
+- **Local API**: To test the web-to-server connection locally, ensure you have configured your `.env` files based on the `.env.example` templates in each tier.

@@ -1,4 +1,23 @@
 import request from 'supertest';
+
+// Mock Firebase Admin before importing app
+jest.mock('firebase-admin', () => ({
+  apps: [],
+  initializeApp: jest.fn(),
+  auth: jest.fn(() => ({
+    verifyIdToken: jest.fn(),
+  })),
+  firestore: jest.fn(() => ({
+    collection: jest.fn().mockReturnThis(),
+    doc: jest.fn().mockReturnThis(),
+  })),
+}));
+
+// Mock Tracing
+jest.mock('./tracing', () => ({
+  startTracing: jest.fn(),
+}));
+
 import app from './index';
 
 describe('GET /health', () => {

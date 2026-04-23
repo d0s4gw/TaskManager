@@ -16,6 +16,12 @@
 - **`task-manager-server`**: Runtime identity for the Logic Tier. Granted `roles/datastore.user` and `roles/secretmanager.secretAccessor`.
 
 ## CI/CD Workflow
-1. **Terraform**: Synchronizes infrastructure (APIs, IAM, Cloud Run service definitions).
-2. **Cloud Build**: Multi-stage build using `cloudbuild.yaml` to handle root build context and shared types.
-3. **Firebase Hosting**: Deploys the Web Tier (Next.js static export).
+1. **Tests**: Automated unit tests run for both `/server` (Jest) and `/web` (Vitest) on every pull request and push to `main`.
+2. **Terraform**: Synchronizes infrastructure (APIs, IAM, Cloud Run service definitions).
+3. **Cloud Build**: Multi-stage build using `cloudbuild.yaml` to handle root build context and shared types.
+4. **Firebase Hosting**: Deploys the Web Tier (Next.js).
+
+## Testing Strategy
+- **Logic Tier**: Jest-based unit and integration tests with ~90% coverage target. Mocks Firestore and Auth for hermetic testing.
+- **Web Tier**: Vitest and React Testing Library for component-level verification.
+- **Shared**: Type safety enforced across the full stack via shared interfaces.

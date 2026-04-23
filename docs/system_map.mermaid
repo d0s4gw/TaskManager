@@ -5,7 +5,8 @@ graph TD
 
     subgraph "CI/CD (GitHub Actions)"
         Git --> GHA[Deploy Workflow]
-        GHA --> WIF[OIDC / WIF Auth]
+        GHA --> Test[Automated Tests: Jest/Vitest]
+        Test --> WIF[OIDC / WIF Auth]
         WIF --> TF[Terraform Apply]
         TF --> CB[Cloud Build]
     end

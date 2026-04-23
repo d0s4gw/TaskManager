@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import expressWinston from 'express-winston';
 import { APIResponse } from '../../shared/api';
 import logger from './logger';
+import taskRoutes from './routes/tasks';
 
 dotenv.config();
 
@@ -46,6 +47,9 @@ app.get('/health', (req, res) => {
   };
   res.status(200).json(response);
 });
+
+// Task Routes
+app.use('/api/tasks', taskRoutes);
 
 // Error Logging
 app.use(expressWinston.errorLogger({
