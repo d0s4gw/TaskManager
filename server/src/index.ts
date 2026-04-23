@@ -8,16 +8,17 @@ import dotenv from 'dotenv';
 import expressWinston from 'express-winston';
 import { APIResponse } from '../../shared/api';
 import logger from './logger';
-import taskRoutes from './routes/tasks';
 
 dotenv.config();
 
-// Initialize Firebase Admin
+// Initialize Firebase Admin before any routes or repositories are imported
 if (!admin.apps.length) {
   admin.initializeApp({
     projectId: process.env.GOOGLE_CLOUD_PROJECT || 'task-manager-staging-494203',
   });
 }
+
+import taskRoutes from './routes/tasks';
 
 const app = express();
 const port = process.env.PORT || 8080;
