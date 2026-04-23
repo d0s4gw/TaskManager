@@ -39,7 +39,7 @@
 ### 7. Current Deployment State
 - **Staging Workspace**: Fully provisioned. APIs enabled, Firestore Native active, Secret 'starter' version 1 created.
 - **Prod Workspace**: Initialized in Terraform but no resources provisioned yet.
-- **WIF Scope**: Restricted to GitHub repository `michaelwelsh/TaskManager`.
+- **WIF Scope**: Restricted to GitHub repository `d0s4gw/TaskManager`.
 
 ### 8. Known Gotchas for Future Sessions
 - **WIF Principals**: Always use the Project Number in `principalSet` strings to avoid "Identity Pool does not exist" errors.
