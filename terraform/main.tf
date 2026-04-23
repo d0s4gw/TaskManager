@@ -117,7 +117,8 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/iam.serviceAccountAdmin", # To manage Service Account IAM
     "roles/cloudbuild.builds.editor", # To check build status
     "roles/cloudbuild.builds.viewer", # To view build details
-    "roles/logging.viewer" # To stream build logs
+    "roles/logging.viewer", # To stream build logs
+    "roles/viewer" # Primitive viewer role for gcloud compatibility
   ])
   project = var.project_id
   role    = each.key
