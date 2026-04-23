@@ -116,6 +116,7 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/resourcemanager.projectIamAdmin", # To manage Project IAM
     "roles/iam.serviceAccountAdmin", # To manage Service Account IAM
     "roles/cloudbuild.builds.editor", # To check build status
+    "roles/cloudbuild.builds.viewer", # To view build details
     "roles/logging.viewer" # To stream build logs
   ])
   project = var.project_id
