@@ -19,13 +19,13 @@ jobs:
         node-version: '24'
         
     - name: Install Server Dependencies
-      run: cd server && npm install
+      run: cd server && npm ci
       
     - name: Run Server Tests
       run: cd server && npm test
       
     - name: Install Web Dependencies
-      run: cd web && npm install
+      run: cd web && npm ci
       
     - name: Run Web Tests
       run: cd web && npm test

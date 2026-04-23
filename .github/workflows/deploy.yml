@@ -54,7 +54,7 @@ jobs:
     - name: 'Deploy Web to Firebase'
       run: |
         cd web
-        npm install
+        npm ci
         npm run build
         cd ..
         npx firebase-tools deploy --only hosting --project $PROJECT_ID --debug
