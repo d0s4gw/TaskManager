@@ -124,9 +124,10 @@ resource "google_project_iam_member" "deployer_roles" {
 
 # 7. Cloud Run Service
 resource "google_cloud_run_v2_service" "server" {
-  name     = "task-manager-server"
-  location = var.region
-  project  = var.project_id
+  name                = "task-manager-server"
+  location            = var.region
+  project             = var.project_id
+  deletion_protection = false
 
   template {
     service_account = google_service_account.server_sa.email
