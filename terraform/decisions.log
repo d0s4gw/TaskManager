@@ -1,0 +1,64 @@
+# Terraform Decision Log - TaskManager Infrastructure
+
+## 2026-04-23 - Initialization & Staging Provisioning
+
+### 1. Bootstrapping Strategy
+- **Decision**: Performed manual bootstrap via `gcloud` for the GCS state bucket (`task-manager-tf-state-494203`) and the initial `github-deployer` Service Account.
+- **Rationale**: Terraform requires a backend bucket to exist before `init`. Since the projects were empty, a chicken-and-egg situation existed.
+- **Action**: Used a temporary Service Account key for the initial `terraform init` and `apply`, which was deleted immediately after execution.
+
+### 2. Multi-Environment Isolation
+- **Decision**: Implemented **Terraform Workspaces** (`staging`, `prod`) instead of separate directory structures.
+- **Rationale**: Provides a DRY (Don't Repeat Yourself) approach where the same core logic (`main.tf`) is applied to different environments using workspace-specific `.tfvars`.
+
+### 3. Workload Identity Federation (WIF) Refinement
+- **Decision**: Updated WIF `principalSet` member string to use the **GCP Project Number** instead of the Project ID.
+- **Rationale**: Initial attempts using Project ID resulted in "Identity Pool does not exist" errors, as the global resource name internally resolves to the project number.
+- **Decision**: Renamed provider to `github-deploy-provider`.
+- **Rationale**: Resolved an "already exists" conflict during the initial apply phase.
+
+3. **Full WIF Resource Name**: `projects/1279412370/locations/global/workloadIdentityPools/github-pool/providers/github-deploy-provider`
+
+## 2026-04-23 - Post-Flight Audit & Hardening
+- **Finding**: `github-deployer` had `roles/owner` and 2 static JSON keys (confirmed via CLI).
+- **Decision**: Implemented Least Privilege in Terraform and flagged static keys for manual deletion.
+- **Action**: Created dedicated `task-manager-server` SA with `datastore.user`, `cloudtrace.agent`, and `secretmanager.secretAccessor`.
+- **Finding**: Cloud Run scaling limits and Firestore composite indexes were missing.
+- **Action**: Configured `min_instance_count` (prod=1, staging=0), `max_instance_count=10`, and a sample `google_firestore_index` for task status/date.
+- **Decision**: Explicitly enabled `sts.googleapis.com` and `iamcredentials.googleapis.com`.
+- **Rationale**: Required for Workload Identity Federation and Service Account token exchange.
+
+### 5. IAM Hardening (Temporary)
+- **Decision**: Granted `roles/owner` to `github-deployer`.
+- **Rationale**: Required for the initial bootstrap phase to enable APIs and provision foundational resources. This will be scoped down to least-privilege roles (e.g., `roles/run.admin`, `roles/datastore.user`) once the CI/CD pipeline is stable.
+
+### 6. Project Metadata (Static Reference)
+- **Staging**: `task-manager-staging-494203` (Project Number: `1279412370`)
+- **Prod**: `task-manager-prod-494203` (Project Number: `978409544323`)
+
+### 7. Current Deployment State
+- **Staging Workspace**: Fully provisioned. APIs enabled, Firestore Native active, Secret 'starter' version 1 created.
+- **Prod Workspace**: Initialized in Terraform but no resources provisioned yet.
+- **WIF Scope**: Restricted to GitHub repository `michaelwelsh/TaskManager`.
+
+### 8. Known Gotchas for Future Sessions
+- **WIF Principals**: Always use the Project Number in `principalSet` strings to avoid "Identity Pool does not exist" errors.
+- **Provider ID**: The provider is named `github-deploy-provider` (not `github-provider`).
+- **Backend Key**: Initial provisioning used `bootstrap-key.json` (deleted); future local runs should use impersonation.
+
+### 9. Developer Quick-Start (Impersonation)
+To run Terraform locally using the `github-deployer` identity without a key file:
+1. Ensure your account has `roles/iam.serviceAccountTokenCreator` on the SA.
+2. Configure the provider to impersonate:
+   ```hcl
+   provider "google" {
+     alias = "impersonation"
+     scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+   }
+   data "google_service_account_access_token" "default" {
+     provider = google.impersonation
+     target_service_account = "github-deployer@task-manager-staging-494203.iam.gserviceaccount.com"
+     scopes = ["cloud-platform"]
+   }
+   ```
+3. **Full WIF Resource Name**: `projects/1279412370/locations/global/workloadIdentityPools/github-pool/providers/github-deploy-provider`

@@ -1,0 +1,55 @@
+name: Deploy TaskManager
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: 'task-manager-staging-494203'
+      REGION: 'us-central1'
+    steps:
+    - uses: actions/checkout@v4
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: 'projects/1279412370/locations/global/workloadIdentityPools/github-pool/providers/github-deploy-provider'
+        service_account: 'github-deployer@task-manager-staging-494203.iam.gserviceaccount.com'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: 'Set up Terraform'
+      uses: hashicorp/setup-terraform@v3
+
+    - name: 'Terraform Plan & Apply'
+      run: |
+        cd terraform
+        terraform init
+        terraform workspace select staging || terraform workspace new staging
+        terraform apply -var-file=environments/staging.tfvars -auto-approve
+
+    - name: 'Build and Deploy Server'
+      run: |
+        gcloud builds submit server --tag gcr.io/$PROJECT_ID/server
+        gcloud run deploy task-manager-server \
+          --image gcr.io/$PROJECT_ID/server \
+          --platform managed \
+          --region $REGION \
+          --service-account task-manager-server@$PROJECT_ID.iam.gserviceaccount.com
+
+    - name: 'Deploy Web to Firebase'
+      run: |
+        cd web
+        npm install
+        npm run build
+        cd ..
+        npx firebase-tools deploy --only hosting --project $PROJECT_ID

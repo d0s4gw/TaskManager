@@ -1,0 +1,21 @@
+# Decisions Log - TaskManager Web
+
+## 1. Framework Selection: Next.js (App Router)
+- **Decision**: Use Next.js with the App Router architecture.
+- **Rationale**: Provides a robust foundation for server-side rendering, optimized routing, and seamless integration with the React ecosystem.
+- **Implementation**: Scaffolded via `create-next-app` with TypeScript and Tailwind CSS.
+
+## 2. Security: Firebase App Check
+- **Decision**: Integrate Firebase App Check with ReCaptcha v3.
+- **Rationale**: Protects the backend from unauthorized traffic by ensuring that requests originate from our legitimate web application.
+- **Implementation**: Configured in `src/lib/firebase.ts` with a provider initialization block that runs only on the client.
+
+## 3. API Connectivity: Firebase Hosting Rewrites
+- **Decision**: Use `firebase.json` rewrites to proxy `/api/**` to Google Cloud Run.
+- **Rationale**: Eliminates Cross-Origin Resource Sharing (CORS) complexities and allows the frontend and backend to share the same domain.
+- **Implementation**: Added a `rewrites` array in `firebase.json` targeting the `task-manager-server` service.
+
+## 4. Design Language: Dark Mode Minimalism
+- **Decision**: Implement a high-contrast, minimalist dark theme with indigo accents.
+- **Rationale**: Prioritizes readability and professional aesthetics, aligning with the "Lead Frontend Engineer" persona requirements.
+- **Implementation**: Utilized Tailwind CSS utility classes and a custom navigation layout in `src/app/page.tsx`.

@@ -1,0 +1,29 @@
+# Next Steps for TaskManager GCP Stack
+
+The Infrastructure Tier (Foundation) is complete. Below are the recommended next steps to transition into the Application and Deployment phases:
+
+## 1. Application Development
+- Develop the Backend (Node.js/other) and Frontend (React/other) application code.
+- Create a `Dockerfile` for each service.
+- Test locally using the provisioned Firestore (Staging) by pointing your local environment to `task-manager-staging-494203`.
+
+## 2. Artifact Management (Terraform)
+- Add `google_artifact_registry_repository` resources to Terraform to store container images.
+- Run `terraform apply` to create the repositories in Staging.
+
+## 3. CI/CD Pipeline (GitHub Actions)
+- Create `.github/workflows/deploy.yml`.
+- Use `google-github-actions/auth` with the existing Workload Identity Federation:
+    - Provider: `projects/1279412370/locations/global/workloadIdentityPools/github-pool/providers/github-deploy-provider`
+    - Service Account: `github-deployer@task-manager-staging-494203.iam.gserviceaccount.com`
+- Implement steps to Build, Tag, and Push images to Artifact Registry.
+
+## 4. Application Tier (Terraform)
+- Define `google_cloud_run_v2_service` resources in `main.tf`.
+- Link them to the images pushed in Step 3.
+- Map the 'starter' secret to the Cloud Run services as environment variables or volumes.
+
+## 5. Production Rollout
+- Once the deployment flow is verified in Staging:
+    - Switch to the `prod` workspace: `terraform workspace select prod`.
+    - Run `terraform apply -var-file=environments/prod.tfvars`.
