@@ -110,7 +110,7 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/storage.admin", # For Terraform state
     "roles/browser",
     "roles/secretmanager.admin", # To manage secrets
-    "roles/firestore.indexAdmin", # To manage indexes
+    "roles/datastore.owner", # To manage Firestore and indexes
     "roles/serviceusage.serviceUsageAdmin", # To manage APIs
     "roles/iam.workloadIdentityPoolAdmin", # To manage WIF
     "roles/resourcemanager.projectIamAdmin", # To manage Project IAM
