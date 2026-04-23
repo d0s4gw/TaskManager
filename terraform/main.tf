@@ -167,14 +167,14 @@ resource "google_cloud_run_v2_service" "server" {
   depends_on = [google_project_service.services]
 }
 
-# 8. Firestore Composite Index (Example)
-resource "google_firestore_index" "task_status_date" {
+# 8. Firestore Composite Indexes
+resource "google_firestore_index" "task_user_date" {
   project    = var.project_id
   database   = google_firestore_database.database.name
   collection = "tasks"
 
   fields {
-    field_path = "status"
+    field_path = "userId"
     order      = "ASCENDING"
   }
 
