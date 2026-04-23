@@ -21,7 +21,18 @@
 3. **Cloud Build**: Multi-stage build using `cloudbuild.yaml` to handle root build context and shared types.
 4. **Firebase Hosting**: Deploys the Web Tier (Next.js).
 
+## Persistence Layer (Firestore)
+- **Mode**: Native Mode.
+- **Indexes**: Composite indexes are managed via Terraform.
+  - Required: `tasks` collection - `userId` (ASC) + `createdAt` (DESC).
+- **Access**: Restricted to the `task-manager-server` service account via IAM.
+
+## Observability
+- **Logging**: Both Server and Web use a structured JSON logger for parity with Google Cloud Logging.
+- **Tracing**: Logic Tier is instrumented with OpenTelemetry (`@opentelemetry/sdk-node`) for request tracing.
+- **Error Tracking**: Global error handlers in both tiers capture and log exceptions with full stack traces.
+
 ## Testing Strategy
-- **Logic Tier**: Jest-based unit and integration tests with ~90% coverage target. Mocks Firestore and Auth for hermetic testing.
-- **Web Tier**: Vitest and React Testing Library for component-level verification.
+- **Logic Tier**: Jest-based unit and integration tests with ~90% coverage.
+- **Web Tier**: Vitest for component logic and build integrity checks.
 - **Shared**: Type safety enforced across the full stack via shared interfaces.

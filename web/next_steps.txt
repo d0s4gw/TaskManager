@@ -1,29 +1,32 @@
 # Next Steps - TaskManager Web
 
+> **Current State**: Web app is live in Staging with full Auth and CRUD connectivity. Build-time crashes are resolved and unit testing is established.
+
 ## 1. Environment Configuration
-- Populate `web/.env.local` with real Firebase credentials:
-    - `NEXT_PUBLIC_FIREBASE_API_KEY`
-    - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-    - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-    - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
-- Register the web app in the Firebase Console and enable App Check for the project.
+- [x] Populate `web/.env.local` with real Firebase credentials.
+- [x] Register the web app in the Firebase Console and enable App Check for the project.
 
 ## 2. Authentication Implementation
-- Create an `AuthProvider` using React Context to manage user sessions.
-- Implement the "Login with Google" logic in `src/lib/firebase.ts`.
-- Protect routes using a higher-order component or a middleware check.
+- [x] Create an `AuthProvider` using React Context to manage user sessions.
+- [x] Implement the "Login with Google" logic in `src/lib/firebase.ts`.
+- [x] Protect routes using a higher-order component or a middleware check.
 
 ## 3. Component Development
-- Build out the dashboard UI using the established Tailwind design system.
-- Create reusable components: `TaskCard`, `ProjectHeader`, `Sidebar`.
-- Ensure all components are responsive and support dark mode.
+- [x] Build out the dashboard UI using the established Tailwind design system.
+- [x] Create reusable components: `TaskCard`, `ProjectHeader`, `Sidebar`.
+- [x] Ensure all components are responsive and support dark mode.
 
 ## 4. API Integration
-- Create a `src/lib/api.ts` client to handle requests to `/api/**`.
-- Use the `/shared` TypeScript interfaces to ensure end-to-end type safety.
-- Implement error handling and loading states for all data fetching.
+- [x] Create a `src/lib/api.ts` client to handle requests to `/api/**`.
+- [x] Use the `/shared` TypeScript interfaces to ensure end-to-end type safety.
+- [x] Implement error handling and loading states for all data fetching.
 
 ## 5. CI/CD Activation
-- Push the codebase to GitHub.
-- Ensure the GitHub Actions secrets (`WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`) are configured.
-- Monitor the first deployment via the `.github/workflows/deploy.yml` pipeline.
+- [x] Push the codebase to GitHub.
+- [x] Ensure the GitHub Actions secrets (`WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`) are configured.
+- [x] Monitor the first deployment via the `.github/workflows/deploy.yml` pipeline.
+
+## 6. Future Features
+- [ ] Add drag-and-drop task reordering.
+- [ ] Implement real-time task updates using Firestore listeners.
+- [ ] Add comprehensive E2E tests using Playwright.

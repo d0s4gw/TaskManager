@@ -1,26 +1,22 @@
 # Next Steps - TaskManager Mobile
 
+> **Current State**: Mobile tier is scaffolded with base dependencies and Dart model parity with the Logic Tier.
+
 ## 1. Platform-Specific Firebase Setup
-- **Android**: Download `google-services.json` from the Firebase Console and place it in `android/app/`.
-- **iOS**: Download `GoogleService-Info.plist` and place it in `ios/Runner/` via Xcode.
-- Configure the SHA-1 fingerprints in the Firebase Console for Google Sign-In to work on Android.
+- [ ] **Android**: Download `google-services.json` from the Firebase Console and place it in `android/app/`.
+- [ ] **iOS**: Download `GoogleService-Info.plist` and place it in `ios/Runner/` via Xcode.
+- [ ] Configure the SHA-1 fingerprints in the Firebase Console for Google Sign-In to work on Android.
 
 ## 2. Authentication Layer
-- Create an `AuthService` class in `lib/services/auth_service.dart`.
-- Implement `signInWithGoogle()` using the `google_sign_in` and `firebase_auth` packages.
-- Setup a stream listener for `authStateChanges()` to handle session persistence.
+- [ ] Create an `AuthService` class in `lib/services/auth_service.dart`.
+- [ ] Implement `signInWithGoogle()` using the `google_sign_in` and `firebase_auth` packages.
+- [ ] Setup a stream listener for `authStateChanges()` to handle session persistence.
 
 ## 3. State Management
-- Select a state management solution (e.g., **Provider** or **Riverpod**).
-- Initialize the application state to track the current user and task list.
-- Implement dependency injection for services.
+- [ ] Select a state management solution (e.g., **Riverpod**).
+- [ ] Initialize the application state to track the current user and task list.
 
 ## 4. Navigation & UI
-- Setup a router (e.g., **go_router**) to manage navigation between the Login screen and Dashboard.
-- Build the UI according to the premium design language (minimalist, clean typography).
-- Implement the `TaskProvider` to fetch data from the backend using the `APIResponse` model.
-
-## 5. Testing & Validation
-- Run `flutter analyze` to ensure code quality.
-- Write unit tests for the Dart models and the `AuthService`.
-- Perform manual testing on an emulator or physical device.
+- [ ] Setup a router (e.g., **go_router**) to manage navigation.
+- [ ] Build the UI according to the premium design language (minimalist, clean typography).
+- [ ] Implement the `TaskProvider` to fetch data from the backend using the `APIResponse` model.

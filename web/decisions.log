@@ -19,3 +19,14 @@
 - **Decision**: Implement a high-contrast, minimalist dark theme with indigo accents.
 - **Rationale**: Prioritizes readability and professional aesthetics, aligning with the "Lead Frontend Engineer" persona requirements.
 - **Implementation**: Utilized Tailwind CSS utility classes and a custom navigation layout in `src/app/page.tsx`.
+
+## 5. Post-Flight Audit & Hardening (2026-04-23)
+- **Decision**: "Build-Aware" Firebase initialization.
+- **Rationale**: Prevented build-time crashes when environment variables are missing during static site generation.
+- **Implementation**: Wrapped initialization in error handling and restricted App Check to client-side only in `src/lib/firebase.ts`.
+- **Decision**: Structured JSON Logging.
+- **Rationale**: Matches the Logic Tier's logging standard for consistent log aggregation in Google Cloud Logging.
+- **Implementation**: Created `src/lib/logger.ts` and integrated it into the `AuthContext` and page lifecycle.
+- **Decision**: Vitest Adoption.
+- **Rationale**: Faster and more modern test runner that integrates perfectly with Next.js and Tailwind.
+- **Implementation**: Added `vitest` and `jsdom` configuration.

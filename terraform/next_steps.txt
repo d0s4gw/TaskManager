@@ -1,15 +1,22 @@
-NEXT STEPS - INFRASTRUCTURE TIER
-===============================
+# Next Steps - Infrastructure Tier
 
-[ ] PROD ROLLOUT
-    - Run 'terraform workspace select prod'
-    - Provision foundational resources for production.
-    - Update 'deploy.yml' to support 'prod' branch deployments.
+> **Current State**: Staging environment is fully provisioned and hardened. CI/CD is automated and keyless via WIF.
 
-[ ] SECURITY HARDENING
-    - Manual Task: Delete the 2 legacy static JSON keys for 'github-deployer' in the GCP Console.
-    - Enable 'Enforcement' mode for App Check in the Firebase Console.
+## 1. Production Rollout
+- [ ] Select the `prod` workspace: `terraform workspace select prod`.
+- [ ] Provision foundational resources for production using `environments/prod.tfvars`.
+- [ ] Update `deploy.yml` to support automated production deployments from the `main` branch (after staging approval).
 
-[ ] OBSERVABILITY
-    - Create a Cloud Monitoring dashboard for Cloud Run metrics.
-    - Configure Error Reporting alerts for the server.
+## 2. Security Hardening
+- [x] Manual Task: Delete legacy static JSON keys for `github-deployer` in the GCP Console.
+- [ ] Enable "Enforcement" mode for App Check in the Firebase Console once traffic is verified.
+- [ ] Configure Cloud Armor or WAF for the public Cloud Run endpoint.
+
+## 3. Observability & Monitoring
+- [ ] Create a Cloud Monitoring dashboard for Cloud Run metrics.
+- [ ] Configure Error Reporting alerts for the server.
+- [ ] Set up budget alerts for the GCP project.
+
+## 4. Mobile Tier Infrastructure
+- [ ] Provision Android/iOS specific identities and API keys in Terraform.
+- [ ] Configure Play Integrity / DeviceCheck for the mobile App Check provider.

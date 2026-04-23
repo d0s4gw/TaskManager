@@ -1,30 +1,28 @@
 # TaskManager Logic Tier - Roadmap & Next Steps
 
-> **Current State**: Logic Tier "Circulatory System" is initialized with Shared Types, Firestore Repositories, Auth Middleware, and OpenTelemetry Tracing. Verification (Build/Test) is passing.
-
-
-With the core infrastructure (Circulatory System) in place, the following steps are recommended to reach production readiness:
+> **Current State**: Logic Tier is fully healthy in Staging. CI/CD is automated, unit tests are passing, and structured logging is active.
 
 ## 1. CI/CD Integration
-- [ ] Configure GitHub Actions to build the Docker image and push it to Artifact Registry.
-- [ ] Use the existing Workload Identity Federation (WIF) setup in `terraform/` for secure, keyless deployment to Cloud Run.
-- [ ] Implement automated testing in the CI pipeline (`npm test`).
+- [x] Configure GitHub Actions to build the Docker image and push it to Artifact Registry.
+- [x] Use the existing Workload Identity Federation (WIF) setup in `terraform/` for secure, keyless deployment to Cloud Run.
+- [x] Implement automated testing in the CI pipeline (`npm test`).
 
 ## 2. Business Logic Implementation
-- [ ] **Task Repository**: Create a repository and routes for managing tasks (CRUD).
-- [ ] **Dependency Graph**: Implement logic to track and visualize dependencies between tasks using the `DependencyData` shared type.
-- [ ] **Input Validation**: Integrate `zod` or `joi` for strict schema validation at the API boundaries (using Shared Types as the base).
+- [x] **Task Repository**: Create a repository and routes for managing tasks (CRUD).
+- [x] **Dependency Graph**: Implement logic to track and visualize dependencies between tasks using the `DependencyData` shared type.
+- [x] **Input Validation**: Integrate `zod` or `joi` for strict schema validation at the API boundaries (using Shared Types as the base).
 
 ## 3. Infrastructure & Security
-- [ ] **Secret Manager**: Update `src/index.ts` to pull sensitive configuration (like Firebase service account details if needed for local dev) from Secret Manager.
-- [ ] **Firestore Rules**: Define and deploy `firestore.rules` to ensure only authenticated users can access their own data.
-- [ ] **CORS**: Configure CORS middleware once the frontend URL is known.
+- [x] **Secret Manager**: Update `src/index.ts` to pull sensitive configuration (like Firebase service account details if needed for local dev) from Secret Manager.
+- [x] **Firestore Rules**: Define and deploy `firestore.rules` to ensure only authenticated users can access their own data.
+- [x] **CORS**: Configure CORS middleware once the frontend URL is known.
 
 ## 4. Frontend Initialization
-- [ ] Initialize the Frontend tier (e.g., Vite + React).
-- [ ] Configure the Frontend to consume the `/shared` types.
-- [ ] Implement Firebase Auth on the frontend to generate the ID tokens required by the Logic Tier.
+- [x] Initialize the Frontend tier (e.g., Vite + React).
+- [x] Configure the Frontend to consume the `/shared` types.
+- [x] Implement Firebase Auth on the frontend to generate the ID tokens required by the Logic Tier.
 
-## 5. Observability Polish
-- [ ] Verify that spans are appearing correctly in Google Cloud Trace.
-- [ ] Implement custom metrics (e.g., task completion rate) using OpenTelemetry.
+## 5. Future Hardening
+- [ ] Implement advanced tracing for complex dependency calculations.
+- [ ] Add request-id propagation to logs for easier cross-service debugging.
+- [ ] Implement rate limiting and DDoS protection at the Cloud Run level.
