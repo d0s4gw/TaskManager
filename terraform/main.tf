@@ -68,7 +68,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "attribute.repository" = "assertion.repository"
   }
 
-  attribute_condition = "assertion.repository == 'michaelwelsh/TaskManager'"
+  attribute_condition = "assertion.repository == 'd0s4gw/TaskManager'"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
@@ -178,5 +178,5 @@ resource "google_service_account_iam_member" "wif_user" {
   count              = var.environment == "staging" ? 1 : 0
   service_account_id = "projects/task-manager-staging-494203/serviceAccounts/github-deployer@task-manager-staging-494203.iam.gserviceaccount.com"
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/michaelwelsh/TaskManager"
+  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/d0s4gw/TaskManager"
 }
