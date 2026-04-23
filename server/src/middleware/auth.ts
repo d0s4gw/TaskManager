@@ -22,6 +22,7 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
     req.user = decodedToken;
     next();
   } catch (error) {
+    console.error('Token verification failed for token suffix:', token.slice(-10));
     console.error('Error verifying token:', error);
     return res.status(401).json({
       success: false,

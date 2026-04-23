@@ -14,7 +14,7 @@ dotenv.config();
 // Initialize Firebase Admin before any routes or repositories are imported
 if (!admin.apps.length) {
   admin.initializeApp({
-    projectId: process.env.GOOGLE_CLOUD_PROJECT || 'task-manager-staging-494203',
+    projectId: 'task-manager-staging-494203',
   });
 }
 
