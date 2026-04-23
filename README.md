@@ -1,43 +1,27 @@
-# TaskManager - Full Stack 3-Tier Application
+# TaskManager
 
-TaskManager is a robust, cloud-native application designed to manage project dependencies and workflows across Web and Mobile platforms.
+3-tier task management application built for scale and security.
 
-## 📂 Project Structure
+## 📁 Repository Structure
+- **/server**: Logic Tier (Node.js, Express, TypeScript, Cloud Run).
+- **/web**: Web Tier (Next.js, Firebase Hosting).
+- **/mobile**: Mobile Tier (Flutter).
+- **/shared**: Shared TypeScript interfaces and models.
+- **/terraform**: Infrastructure-as-Code (GCP).
+- **/docs**: [System Architecture and Infrastructure Specifications](./docs/architecture.md).
+- **/archive**: Legacy codebase and design iterations.
 
-```text
-TaskManager/
-├── web/            # Next.js Web Surface (App Router, Tailwind)
-├── mobile/         # Flutter Mobile Surface (iOS/Android)
-├── server/         # Node.js/Express Backend (Cloud Run)
-├── shared/         # TypeScript Interfaces (Single Source of Truth)
-├── terraform/      # GCP Infrastructure as Code
-└── .github/        # Deployment Workflows (WIF enabled)
-```
+## 🚀 Deployment (GitOps)
+The project uses a fully automated CI/CD pipeline in GitHub Actions.
 
-## 🚀 Architectural Overview
-- **Frontend**: Next.js (Web) and Flutter (Mobile) providing a consistent, premium experience.
-- **Backend**: Serverless Node.js API deployed on **Google Cloud Run**.
-- **Database**: **Cloud Firestore** for real-time persistence.
-- **Infrastructure**: Fully provisioned via **Terraform** with **Workload Identity Federation** for secure CI/CD.
-- **Security**: **Firebase App Check** for API protection and **Secret Manager** for credential handling.
+### Staging Environment
+Push to the `main` branch to trigger:
+1. **Infra Sync**: Terraform updates roles, APIs, and scaling.
+2. **Build**: Cloud Build compiles the Logic Tier with shared dependencies.
+3. **Deploy**: Automatic rollout to Cloud Run and Firebase Hosting.
 
-## 🛠 Quick Start
-
-### 1. Backend
-Navigate to `/server`, install dependencies, and run locally or deploy via Cloud Build.
-
-### 2. Frontend (Web)
-Navigate to `/web`, run `npm run dev` to start the dashboard. Proxies to backend via Firebase Hosting.
-
-### 3. Frontend (Mobile)
-Navigate to `/mobile`, run `flutter run` to start the mobile app.
-
-## 📄 Key Documentation
-- [System Design Artifact](.gemini/antigravity/brain/da24c583-dfc9-4823-93fb-da2a163ea602/system_design.md): Deep dive into the stack architecture.
-- [Walkthrough](.gemini/antigravity/brain/da24c583-dfc9-4823-93fb-da2a163ea602/walkthrough.md): Deployment and verification records.
-- [Developer Notes](DEVELOPER_NOTES.md): Essential patterns and "institutional knowledge" for AI agents.
-- **Decisions Logs**: Found in each surface directory (`web/`, `mobile/`, `server/`).
-- **Next Steps**: Roadmaps found in each surface directory.
-
-## 🔐 Security Note
-This project uses **Workload Identity Federation**. Ensure your GitHub repository is authorized in the Terraform WIF pool before running the deployment pipeline.
+## 🔐 Security Standards
+- **Workload Identity Federation**: Zero static keys for deployment.
+- **Least Privilege**: Service-specific IAM identities.
+- **Firebase App Check**: Enforced for Web and Mobile surfaces.
+- **Secret Manager**: Secure handling of API keys and database credentials.

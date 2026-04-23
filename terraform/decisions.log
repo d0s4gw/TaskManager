@@ -62,3 +62,10 @@ To run Terraform locally using the `github-deployer` identity without a key file
    }
    ```
 3. **Full WIF Resource Name**: `projects/1279412370/locations/global/workloadIdentityPools/github-pool/providers/github-deploy-provider`
+
+### 10. Final GitOps Stabilization (2026-04-23)
+- **Decision**: Implemented 'cloudbuild.yaml' in the root.
+- **Rationale**: Resolved the build context conflict where the server build needed access to '/shared'.
+- **Decision**: Expanded 'github-deployer' roles to include 'roles/viewer' and 'roles/iam.serviceAccountAdmin'.
+- **Rationale**: Required for gcloud log streaming and Terraform-managed IAM bindings.
+- **Result**: Staging environment is 100% automated and hardened.

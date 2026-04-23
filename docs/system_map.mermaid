@@ -1,0 +1,28 @@
+graph TD
+    subgraph "Local Development"
+        Dev[Developer] --> Git[Git Push]
+    end
+
+    subgraph "CI/CD (GitHub Actions)"
+        Git --> GHA[Deploy Workflow]
+        GHA --> WIF[OIDC / WIF Auth]
+        WIF --> TF[Terraform Apply]
+        TF --> CB[Cloud Build]
+    end
+
+    subgraph "GCP Staging Environment"
+        CB --> GCR[Artifact Registry]
+        GCR --> CR[Cloud Run: Server]
+        TF --> FS[Firestore: Native]
+        TF --> SM[Secret Manager]
+        GHA --> FH[Firebase Hosting: Web]
+    end
+
+    subgraph "Identity & Access"
+        WIF -.-> |Impersonates| GSA[github-deployer]
+        CR -.-> |Identity| SSA[task-manager-server]
+        SSA --> |roles/datastore.user| FS
+        SSA --> |roles/secretmanager.secretAccessor| SM
+    end
+
+    FH --> |/api/* Rewrites| CR
