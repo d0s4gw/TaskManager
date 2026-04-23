@@ -7,6 +7,7 @@ import { TaskList } from "@/components/TaskList";
 import { Task, CreateTaskDTO } from "../../../shared/task";
 import { APIResponse } from "../../../shared/api";
 import { LogOut, Loader2 } from "lucide-react";
+import { TaskApi } from "@/lib/api";
 
 export default function Home() {
   const { user, loading: authLoading, loginWithGoogle, logout } = useAuth();
@@ -22,63 +23,39 @@ export default function Home() {
     }
   }, [user]);
 
+  const getApi = () => new TaskApi(() => user?.getIdToken() || Promise.resolve(undefined));
+
   const fetchTasks = async () => {
+    if (!user) return;
     setTasksLoading(true);
+    setError(null);
     try {
-      const token = await user?.getIdToken();
-      const res = await fetch("/api/tasks", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const result: APIResponse<Task[]> = await res.json();
-      if (result.success) {
-        setTasks(result.data || []);
-      } else {
-        setError(result.error?.message || "Failed to fetch tasks");
-      }
-    } catch (err) {
-      setError("Failed to connect to API");
+      const data = await getApi().getTasks();
+      setTasks(data);
+    } catch (err: any) {
+      setError(err.message === "Unauthorized" ? "Session expired. Please log in again." : "Failed to connect to API");
     } finally {
       setTasksLoading(false);
     }
   };
 
   const handleAddTask = async (taskData: CreateTaskDTO) => {
+    setError(null);
     try {
-      const token = await user?.getIdToken();
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(taskData),
-      });
-      const result: APIResponse<Task> = await res.json();
-      if (result.success && result.data) {
-        setTasks([result.data, ...tasks]);
-      }
-    } catch (err) {
-      setError("Failed to add task");
+      const newTask = await getApi().createTask(taskData);
+      setTasks([newTask, ...tasks]);
+    } catch (err: any) {
+      setError(err.message || "Failed to add task");
     }
   };
 
   const handleToggleTask = async (id: string, completed: boolean) => {
+    setError(null);
     const originalTasks = [...tasks];
     setTasks(tasks.map(t => t.id === id ? { ...t, completed } : t));
     
     try {
-      const token = await user?.getIdToken();
-      const res = await fetch(`/api/tasks/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ completed }),
-      });
-      if (!res.ok) throw new Error();
+      await getApi().updateTask(id, completed);
     } catch (err) {
       setTasks(originalTasks);
       setError("Failed to update task");
@@ -86,18 +63,12 @@ export default function Home() {
   };
 
   const handleDeleteTask = async (id: string) => {
+    setError(null);
     const originalTasks = [...tasks];
     setTasks(tasks.filter(t => t.id !== id));
     
     try {
-      const token = await user?.getIdToken();
-      const res = await fetch(`/api/tasks/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error();
+      await getApi().deleteTask(id);
     } catch (err) {
       setTasks(originalTasks);
       setError("Failed to delete task");
