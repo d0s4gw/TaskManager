@@ -118,7 +118,9 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/cloudbuild.builds.editor", # To check build status
     "roles/cloudbuild.builds.viewer", # To view build details
     "roles/logging.viewer", # To stream build logs
-    "roles/viewer" # Primitive viewer role for gcloud compatibility
+    "roles/viewer", # Primitive viewer role for gcloud compatibility
+    "roles/firebasehosting.admin", # To deploy web tier
+    "roles/firebase.developAdmin" # For general firebase management
   ])
   project = var.project_id
   role    = each.key
