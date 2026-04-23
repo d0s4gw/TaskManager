@@ -110,7 +110,12 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/storage.admin", # For Terraform state
     "roles/browser",
     "roles/secretmanager.admin", # To manage secrets
-    "roles/firestore.indexAdmin" # To manage indexes
+    "roles/firestore.indexAdmin", # To manage indexes
+    "roles/serviceusage.serviceUsageAdmin", # To manage APIs
+    "roles/iam.workloadIdentityPoolAdmin", # To manage WIF
+    "roles/resourcemanager.projectIamAdmin", # To manage Project IAM
+    "roles/iam.serviceAccountAdmin", # To manage Service Account IAM
+    "roles/cloudbuild.builds.editor" # To check build status
   ])
   project = var.project_id
   role    = each.key
