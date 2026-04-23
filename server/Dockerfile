@@ -4,7 +4,7 @@ FROM node:18-slim AS builder
 WORKDIR /app
 
 # Copy shared types
-COPY shared /shared
+COPY shared ./shared
 
 # Copy server package files
 COPY server/package*.json ./server/
@@ -29,7 +29,7 @@ RUN npm install --only=production
 
 # Copy built assets from builder
 COPY --from=builder /app/server/dist ./dist
-COPY --from=builder /shared /app/shared
+COPY --from=builder /app/shared /app/shared
 
 # Set environment variables
 ENV NODE_ENV=production
