@@ -9,6 +9,7 @@ import {
   onAuthStateChanged 
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { logger } from '../lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      logger.info('Auth state changed', { userId: user?.uid });
       setUser(user);
       setLoading(false);
     });
@@ -37,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
-      console.error("Error signing in with Google", error);
+      logger.error('Error signing in with Google', { error });
     }
   };
 

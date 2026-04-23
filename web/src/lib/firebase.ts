@@ -12,15 +12,26 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-
-// Initialize App Check
-if (typeof window !== "undefined") {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""),
-    isTokenAutoRefreshEnabled: true,
-  });
+let app;
+try {
+  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+} catch (error) {
+  console.warn("Firebase initialization failed. This is expected during build if environment variables are missing.");
+  // Return a dummy app object to avoid crashing the build
+  app = { name: "[DEFAULT]" } as any;
 }
 
-export const auth = getAuth(app);
+// Initialize App Check
+if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (error) {
+    console.error("App Check initialization failed:", error);
+  }
+}
+
+export const auth = typeof window !== "undefined" ? getAuth(app) : ({} as any);
 export default app;
