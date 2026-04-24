@@ -43,19 +43,19 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
     }
 
-    const taskData: CreateTaskDTO = req.body;
-    if (!taskData.title) {
+    const { title, description, priority, dueDate, category } = req.body as CreateTaskDTO;
+    if (!title) {
       return res.status(400).json({ success: false, error: { message: 'Title is required' } });
     }
 
     const now = new Date().toISOString();
     const newTask = await taskRepository.createWithId({
-      ...taskData,
-      description: taskData.description || '',
+      title,
+      description: description || '',
       completed: false,
-      priority: taskData.priority || 'none',
-      dueDate: taskData.dueDate || '',
-      category: taskData.category || '',
+      priority: priority || 'none',
+      dueDate: dueDate || '',
+      category: category || '',
       userId,
       createdAt: now,
       updatedAt: now,
@@ -90,11 +90,17 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: { message: 'Task not found' } });
     }
 
-    const updateData: UpdateTaskDTO = req.body;
-    const updatedTask = {
-      ...updateData,
+    const { title, description, completed, priority, dueDate, category } = req.body as UpdateTaskDTO;
+    const updatedTask: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
+    // Only include fields that were explicitly sent
+    if (title !== undefined) updatedTask.title = title;
+    if (description !== undefined) updatedTask.description = description;
+    if (completed !== undefined) updatedTask.completed = completed;
+    if (priority !== undefined) updatedTask.priority = priority;
+    if (dueDate !== undefined) updatedTask.dueDate = dueDate;
+    if (category !== undefined) updatedTask.category = category;
 
     await taskRepository.update(id as string, updatedTask);
     const finalTask = { ...existingTask, ...updatedTask };
