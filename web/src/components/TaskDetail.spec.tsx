@@ -16,7 +16,21 @@ const mockTask: Task = {
 };
 
 describe('TaskDetail', () => {
-  it('renders nothing when not open', () => {
+  it('renders nothing when no task is provided', () => {
+    const { container } = render(
+      <TaskDetail 
+        task={null} 
+        isOpen={false} 
+        onClose={vi.fn()} 
+        onUpdate={vi.fn()} 
+        onDelete={vi.fn()} 
+        onToggle={vi.fn()} 
+      />
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('is hidden when closed', () => {
     const { container } = render(
       <TaskDetail 
         task={mockTask} 
@@ -27,7 +41,9 @@ describe('TaskDetail', () => {
         onToggle={vi.fn()} 
       />
     );
-    expect(container).toBeEmptyDOMElement();
+    // Should be in DOM but have translate-x-full class
+    const panel = container.querySelector('.translate-x-full');
+    expect(panel).toBeInTheDocument();
   });
 
   it('renders task details when open', () => {
