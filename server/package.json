@@ -20,6 +20,7 @@
     "@opentelemetry/resources": "^1.30.0",
     "@opentelemetry/sdk-node": "^0.57.0",
     "@opentelemetry/semantic-conventions": "^1.30.0",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-winston": "^4.2.0",
@@ -27,6 +28,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",

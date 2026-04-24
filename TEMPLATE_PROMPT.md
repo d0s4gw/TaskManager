@@ -12,7 +12,8 @@ Use this prompt to build a production-grade 3-tier application on GCP with zero 
 1.  **GCP Setup**: Create `${app}-staging` and `${app}-prod` projects.
 2.  **State Management**: Create a GCS bucket `${app}-tfstate` in the staging project (Uniform access).
 3.  **Auth Bootstrap**: Create a `github-deployer` Service Account in both projects. Grant `roles/owner` temporarily. Download JSON key for staging and save as GitHub Secret `GOOGLE_CREDENTIALS`.
-4.  **Firebase initialization**: Link Firebase to both projects. Enable Auth (Google), Firestore (Native), and generate App Check (ReCaptcha v3) site keys.
+4.  **Firebase & API Enablement**: Link Firebase to both projects. Enable Auth (Google), Firestore (Native), and generate App Check (ReCaptcha v3) site keys. **Critical APIs**: Ensure `iamcredentials`, `run`, `firestore`, and `artifactregistry` are enabled.
+5.  **App Check Debug Setup**: In the Firebase Console (App Check > Apps), generate a **Debug Token** for your development environment. Save this as `NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN` in your `.env.local` or Secret Manager.
 
 ---
 
@@ -41,6 +42,7 @@ Use this prompt to build a production-grade 3-tier application on GCP with zero 
     "express": "^5.2.1",
     "express-winston": "^4.2.0",
     "firebase-admin": "^13.8.0",
+    "cors": "^2.8.5",
     "winston": "^3.19.0"
   },
   "devDependencies": {
@@ -195,6 +197,7 @@ import { requestId } from './middleware/request-id';
 if (!admin.apps.length) { admin.initializeApp({ projectId: process.env.GOOGLE_CLOUD_PROJECT }); }
 
 const app = express();
+app.use(require('cors')()); // Standard CORS for Zero-403 preflight resilience
 app.use(express.json());
 app.use(requestId);
 app.use(expressWinston.logger({
@@ -231,13 +234,19 @@ let app;
 try { app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig); }
 catch (e) { app = { name: "[DEFAULT]" } as any; }
 
-if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
-  try {
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
-      isTokenAutoRefreshEnabled: true,
-    });
-  } catch (e) {}
+if (typeof window !== "undefined") {
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_ALL) {
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN;
+  }
+
+  if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+    try {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
+        isTokenAutoRefreshEnabled: true,
+      });
+    } catch (e) {}
+  }
 }
 
 export const auth = typeof window !== "undefined" ? getAuth(app) : ({} as any);
@@ -294,6 +303,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   workload_identity_pool_id = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-deploy-provider"
   attribute_mapping = { "google.subject" = "assertion.sub", "attribute.repository" = "assertion.repository" }
+  attribute_condition = "assertion.repository == '${var.github_repo}'"
   oidc { issuer_uri = "https://token.actions.githubusercontent.com" }
 }
 
@@ -303,10 +313,16 @@ resource "google_service_account" "runtime_sa" {
 }
 
 resource "google_project_iam_member" "runtime_roles" {
-  for_each = toset(["roles/datastore.user", "roles/cloudtrace.agent", "roles/secretmanager.secretAccessor"])
+  for_each = toset(["roles/datastore.user", "roles/cloudtrace.agent", "roles/secretmanager.secretAccessor", "roles/serviceusage.serviceUsageConsumer"])
   project = var.project_id
   role = each.key
   member = "serviceAccount:${google_service_account.runtime_sa.email}"
+}
+
+resource "google_service_account_iam_member" "wif_token_creator" {
+  service_account_id = google_service_account.runtime_sa.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/${var.github_repo}"
 }
 
 moved { from = google_iam_workload_identity_pool.github_pool[0]; to = google_iam_workload_identity_pool.github_pool }
@@ -330,6 +346,8 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+      - name: Wait for IAM consistency
+        run: sleep 60 # IAM Propagation Warm-up
       - name: Terraform
         run: |
           cd terraform
@@ -339,7 +357,10 @@ jobs:
       - name: Deploy
         run: |
           gcloud builds submit . --config cloudbuild.yaml
-          gcloud run deploy api --image gcr.io/${{ env.PROJECT_ID }}/server --service-account api-runtime-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          # Retry loop for deployment to handle eventual consistency
+          for i in {1..3}; do
+            gcloud run deploy api --image gcr.io/${{ env.PROJECT_ID }}/server --service-account api-runtime-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com && break || sleep 30
+          done
 ```
 
 ---
@@ -348,5 +369,8 @@ jobs:
 1.  **Clone structures exactly**.
 2.  **Ensure OTel is Line 1** of server `index.ts`.
 3.  **Ensure Proxying** is via `firebase.json` rewrites.
-4.  **Verify WIF** project numbers in member bindings.
-5.  **Audit** OTel init, JSON logging, and RequestID propagation.
+4.  **Verify WIF** project numbers and repository name in member bindings.
+5.  **Verify Manual Setup**: The agent MUST check that `NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN` is present in the environment before proceeding with web tier development.
+6.  **IAM Propagation Warm-up**: After Terraform apply or IAM changes, **sleep 60** before attempting deployment or API calls to account for eventual consistency.
+7.  **Audit** OTel init, JSON logging, and RequestID propagation.
+8.  **WIF Troubleshooting**: If you get a 403 on `gcloud auth`, verify that the `github-pool` is active and the repository name matches **exactly** (case-sensitive).

@@ -20,10 +20,12 @@ if (!admin.apps.length) {
 }
 
 import taskRoutes from './routes/tasks';
+import cors from 'cors';
 
 const app = express();
 const port = process.env.PORT || 8080;
 
+app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 // Assign a unique request ID to every inbound request

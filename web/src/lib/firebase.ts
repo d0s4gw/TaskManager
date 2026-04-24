@@ -23,14 +23,21 @@ try {
 }
 
 // Initialize App Check
-if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
-  try {
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
-      isTokenAutoRefreshEnabled: true,
-    });
-  } catch (error) {
-    logger.error("App Check initialization failed", { error });
+if (typeof window !== "undefined") {
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_ALL) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN;
+  }
+
+  if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+    try {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
+        isTokenAutoRefreshEnabled: true,
+      });
+    } catch (error) {
+      logger.error("App Check initialization failed", { error });
+    }
   }
 }
 

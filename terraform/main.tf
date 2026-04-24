@@ -81,7 +81,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "attribute.repository" = "assertion.repository"
   }
 
-  attribute_condition = "assertion.repository == 'd0s4gw/TaskManager'"
+  attribute_condition = "assertion.repository == '${var.github_repo}'"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
@@ -133,7 +133,8 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/logging.viewer",                  # To stream build logs
     "roles/viewer",                          # Primitive viewer role for gcloud compatibility
     "roles/firebasehosting.admin",           # To deploy web tier
-    "roles/firebase.developAdmin"            # For general firebase management
+    "roles/firebase.developAdmin",           # For general firebase management
+    "roles/serviceusage.serviceUsageConsumer" # For API enablement checks
   ])
   project = var.project_id
   role    = each.key
@@ -201,9 +202,17 @@ resource "google_firestore_index" "task_user_date" {
 resource "google_service_account_iam_member" "wif_user" {
   service_account_id = "projects/${var.project_id}/serviceAccounts/github-deployer@${var.project_id}.iam.gserviceaccount.com"
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/d0s4gw/TaskManager"
+  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${var.github_repo}"
 }
-# 10. Allow Unauthenticated Access
+
+# 10. WIF Token Creator (Zero-403 Protocol)
+resource "google_service_account_iam_member" "wif_token_creator" {
+  service_account_id = google_service_account.server_sa.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${var.github_repo}"
+}
+
+# 11. Allow Unauthenticated Access
 resource "google_cloud_run_v2_service_iam_member" "public_access" {
   project  = var.project_id
   location = var.region
