@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
-import { Task, CreateTaskDTO } from "../../../shared/task";
+import { TaskDetail } from "@/components/TaskDetail";
+import { Task, CreateTaskDTO, UpdateTaskDTO } from "../../../shared/task";
 import { APIResponse } from "../../../shared/api";
 import { LogOut, Loader2 } from "lucide-react";
 import { TaskApi } from "@/lib/api";
@@ -14,6 +15,7 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -49,23 +51,34 @@ export default function Home() {
     }
   };
 
-  const handleToggleTask = async (id: string, completed: boolean) => {
+  const handleUpdateTask = async (id: string, updates: UpdateTaskDTO) => {
     setError(null);
     const originalTasks = [...tasks];
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed } : t));
+    setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t));
     
+    // Update selectedTask if it's the one being edited
+    if (selectedTask?.id === id) {
+      setSelectedTask(prev => prev ? { ...prev, ...updates } : null);
+    }
+
     try {
-      await getApi().updateTask(id, completed);
+      await getApi().updateTask(id, updates);
     } catch (err) {
       setTasks(originalTasks);
+      if (selectedTask?.id === id) setSelectedTask(tasks.find(t => t.id === id) || null);
       setError("Failed to update task");
     }
+  };
+
+  const handleToggleTask = async (id: string, completed: boolean) => {
+    await handleUpdateTask(id, { completed });
   };
 
   const handleDeleteTask = async (id: string) => {
     setError(null);
     const originalTasks = [...tasks];
     setTasks(tasks.filter(t => t.id !== id));
+    if (selectedTask?.id === id) setSelectedTask(null);
     
     try {
       await getApi().deleteTask(id);
@@ -174,11 +187,22 @@ export default function Home() {
                 tasks={tasks} 
                 onToggle={handleToggleTask} 
                 onDelete={handleDeleteTask} 
+                onSelectTask={(task) => setSelectedTask(task)}
               />
             )}
           </div>
         )}
       </main>
+
+      {/* Task Detail Sidebar */}
+      <TaskDetail 
+        task={selectedTask}
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onUpdate={handleUpdateTask}
+        onDelete={handleDeleteTask}
+        onToggle={handleToggleTask}
+      />
 
       <footer className="py-12 border-t border-zinc-200 dark:border-zinc-800">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8 opacity-50">

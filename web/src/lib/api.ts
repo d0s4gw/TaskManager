@@ -39,10 +39,10 @@ export class TaskApi {
     return res.data;
   }
 
-  async updateTask(id: string, completed: boolean): Promise<void> {
+  async updateTask(id: string, updates: Partial<Task>): Promise<void> {
     await this.request<void>(`/tasks/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ completed }),
+      body: JSON.stringify(updates),
     });
   }
 
