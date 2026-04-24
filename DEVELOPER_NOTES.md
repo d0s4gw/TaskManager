@@ -12,10 +12,11 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 - **Secret Management**: Do not use `.env` files for production secrets. Use Google Secret Manager. The `terraform/` layer handles the provisioning of these secrets.
 
 ## 🚀 Deployment & CI/CD
-- **Environment**: Node.js 24 is the project standard. All CI/CD pipelines and local development should target Node 24.
-- **Workflow**: We use GitHub Actions with **Workload Identity Federation (WIF)**. Use `npm ci` for all installations in CI/CD to ensure build stability.
+- **Environment**: Node.js 24 is the project standard. All CI/CD pipelines, Dockerfiles, and local development should target Node 24.
+- **Workflow**: We use GitHub Actions with **Workload Identity Federation (WIF)**. Use `npm ci` for all installations in CI/CD and Dockerfiles to ensure build stability.
 - **Project Number**: The GCP Project Number is `1279412370`.
-- **Promotion Path**: Code is pushed to `main`, which triggers a deployment to the `staging` environment. Production promotion is currently manual via Terraform.
+- **Promotion Path**: Code is pushed to `main`, which triggers the deploy workflow. Tests (server, web, terraform validate) must **all pass** before the deploy job runs. Production promotion is currently manual via Terraform.
+- **Dockerfile**: Uses multi-stage build with `node:24-slim` and `npm ci` in both stages. Never use `npm install` in the Dockerfile.
 
 ## 📱 Mobile (Flutter) Patterns
 - **Model Parity**: Dart models in `mobile/lib/models/` must manually track the `/shared` TypeScript interfaces. If you update a TS interface, you **must** update the corresponding Dart model.
@@ -23,8 +24,13 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 
 ## 🌐 Web (Next.js) Patterns
 - **API Proxy**: Use the `/api` prefix for all backend calls. Firebase Hosting rewrites proxy these calls to the Cloud Run server.
-- **Observability**: Use the structured `JSON` logger in `web/src/lib/logger.ts` for all important events. This ensures logs are properly parsed by Cloud Logging.
+- **Observability**: Use the structured `JSON` logger in `web/src/lib/logger.ts` for **all** logging. Do not use `console.error` or `console.log` in source files — the only exception is the build-time guard in `firebase.ts`.
 - **Firebase Initialization**: Firebase is initialized with a "build-aware" pattern in `web/src/lib/firebase.ts` to prevent build-time crashes when environment variables are missing.
+
+## 🖥️ Server (Express) Patterns
+- **Structured Logging**: Use `winston` via `src/logger.ts` for all logging. Do not use `console.error` or `console.log` — every log entry must be structured JSON for Cloud Logging.
+- **Request-ID**: Every request is assigned a unique ID via the `src/middleware/request-id.ts` middleware. The ID is read from the `X-Request-ID` header (set by upstream proxies) or generated as a UUID. Include `requestId: req.requestId` in all log metadata.
+- **Environment Config**: Do not hardcode project IDs or environment-specific values. Use `process.env.GOOGLE_CLOUD_PROJECT` (auto-set by Cloud Run, or from `.env` locally).
 
 ## 🛠 Local Development
 - **Backend**: `npm run dev` in `server/`. Run tests with `npm test`.

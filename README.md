@@ -12,7 +12,7 @@
 
 ## 🏗️ Architecture Highlights
 - **Build Resilience**: "Build-aware" Firebase initialization ensures static site generation survives missing secrets.
-- **Observability**: Structured JSON logging across all tiers for native Google Cloud Logging integration.
+- **Observability**: Structured JSON logging across all tiers for native Google Cloud Logging integration. Request-ID correlation enables cross-service debugging.
 - **Type Safety**: Unified domain models shared between frontend and backend.
 - **Stateless Logic**: Scalable, containerized backend optimized for cold-start performance.
 
@@ -21,9 +21,10 @@ The project uses a fully automated CI/CD pipeline in GitHub Actions.
 
 ### Staging Environment
 Push to the `main` branch to trigger:
-1. **Infra Sync**: Terraform updates roles, APIs, and scaling.
-2. **Build**: Cloud Build compiles the Logic Tier with shared dependencies.
-3. **Deploy**: Automatic rollout to Cloud Run and Firebase Hosting.
+1. **Test Gate**: Server (Jest), Web (Vitest), and Terraform (validate + fmt) must all pass.
+2. **Infra Sync**: Terraform updates roles, APIs, and scaling.
+3. **Build**: Cloud Build compiles the Logic Tier with shared dependencies.
+4. **Deploy**: Automatic rollout to Cloud Run and Firebase Hosting.
 
 ## 🛠️ Local Development
 

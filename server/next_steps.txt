@@ -1,6 +1,6 @@
 # TaskManager Logic Tier - Roadmap & Next Steps
 
-> **Current State**: Logic Tier is fully healthy in Staging. CI/CD is automated, unit tests are passing, and structured logging is active.
+> **Current State**: Logic Tier is fully healthy in Staging. CI/CD is automated with test gating, unit tests are passing, structured logging with request-ID correlation is active, and the Dockerfile uses `node:24-slim` with `npm ci`.
 
 ## 1. CI/CD Integration
 - [x] Configure GitHub Actions to build the Docker image and push it to Artifact Registry.
@@ -24,5 +24,5 @@
 
 ## 5. Future Hardening
 - [ ] Implement advanced tracing for complex dependency calculations.
-- [ ] Add request-id propagation to logs for easier cross-service debugging.
+- [x] Add request-id propagation to logs for easier cross-service debugging.
 - [ ] Implement rate limiting and DDoS protection at the Cloud Run level.

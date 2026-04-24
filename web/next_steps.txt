@@ -1,6 +1,6 @@
 # Next Steps - TaskManager Web
 
-> **Current State**: Web app is live in Staging with full Auth and CRUD connectivity. Build-time crashes are resolved and unit testing is established.
+> **Current State**: Web app is live in Staging with full Auth and CRUD connectivity. Build-time crashes are resolved, unit testing is established, structured logging is fully migrated (no `console.error` in source), and CI/CD gates deploys on test results.
 
 ## 1. Environment Configuration
 - [x] Populate `web/.env.local` with real Firebase credentials.

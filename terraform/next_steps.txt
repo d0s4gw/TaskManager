@@ -1,6 +1,6 @@
 # Next Steps - Infrastructure Tier
 
-> **Current State**: Staging environment is fully provisioned and hardened. CI/CD is automated and keyless via WIF.
+> **Current State**: Staging environment is fully provisioned and hardened. CI/CD is automated and keyless via WIF. All Terraform config is parameterized (no hardcoded project IDs). Deploys are gated on `terraform validate` and `fmt -check`.
 
 ## 1. Production Rollout
 - [ ] Select the `prod` workspace: `terraform workspace select prod`.

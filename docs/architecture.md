@@ -16,7 +16,7 @@
 - **`task-manager-server`**: Runtime identity for the Logic Tier. Granted `roles/datastore.user` and `roles/secretmanager.secretAccessor`.
 
 ## CI/CD Workflow
-1. **Tests**: Automated unit tests run for both `/server` (Jest) and `/web` (Vitest) on every pull request and push to `main`.
+1. **Test Gate**: Server (Jest), Web (Vitest), and Terraform (fmt + validate) run in parallel on every push to `main`. Deploy is blocked until all pass.
 2. **Terraform**: Synchronizes infrastructure (APIs, IAM, Cloud Run service definitions).
 3. **Cloud Build**: Multi-stage build using `cloudbuild.yaml` to handle root build context and shared types.
 4. **Firebase Hosting**: Deploys the Web Tier (Next.js).
@@ -28,11 +28,13 @@
 - **Access**: Restricted to the `task-manager-server` service account via IAM.
 
 ## Observability
-- **Logging**: Both Server and Web use a structured JSON logger for parity with Google Cloud Logging.
+- **Logging**: Both Server and Web use a structured JSON logger for parity with Google Cloud Logging. All `console.error/log` calls have been migrated to the structured logger.
+- **Request-ID**: Every inbound request is assigned a unique ID via `X-Request-ID` header propagation or UUID generation. The ID is included in all log entries and echoed on responses for cross-service correlation.
 - **Tracing**: Logic Tier is instrumented with OpenTelemetry (`@opentelemetry/sdk-node`) for request tracing.
 - **Error Tracking**: Global error handlers in both tiers capture and log exceptions with full stack traces.
 
 ## Testing Strategy
 - **Logic Tier**: Jest-based unit and integration tests with ~90% coverage.
 - **Web Tier**: Vitest for component logic and build integrity checks.
+- **Infrastructure**: Terraform `fmt -check` and `validate` run in CI on every push.
 - **Shared**: Type safety enforced across the full stack via shared interfaces.

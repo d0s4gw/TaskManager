@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { CreateTaskDTO } from '../../../shared/task';
+import { logger } from '../lib/logger';
 
 interface TaskFormProps {
   onAddTask: (task: CreateTaskDTO) => Promise<void>;
@@ -23,7 +24,7 @@ export function TaskForm({ onAddTask }: TaskFormProps) {
       setTitle('');
       setDescription('');
     } catch (error) {
-      console.error("Failed to add task", error);
+      logger.error('Failed to add task', { error });
     } finally {
       setIsSubmitting(false);
     }

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as admin from 'firebase-admin';
+import logger from '../logger';
 
 export interface AuthRequest extends Request {
   user?: admin.auth.DecodedIdToken;
@@ -22,8 +23,11 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
     req.user = decodedToken;
     next();
   } catch (error) {
-    console.error('Token verification failed for token suffix:', token.slice(-10));
-    console.error('Error verifying token:', error);
+    logger.warn('Token verification failed', {
+      requestId: req.requestId,
+      tokenSuffix: token.slice(-10),
+      error: error instanceof Error ? error.message : String(error),
+    });
     return res.status(401).json({
       success: false,
       error: { code: 'unauthorized', message: 'Token verification failed' }

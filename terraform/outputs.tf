@@ -7,5 +7,5 @@ output "firestore_name" {
 }
 
 output "wif_pool_id" {
-  value = var.environment == "staging" ? google_iam_workload_identity_pool.github_pool[0].id : "managed-in-staging"
+  value = google_iam_workload_identity_pool.github_pool.id
 }

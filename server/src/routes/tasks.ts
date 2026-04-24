@@ -3,6 +3,7 @@ import { AuthRequest, verifyToken } from '../middleware/auth';
 import { TaskRepository } from '../repositories/task.repository';
 import { CreateTaskDTO, UpdateTaskDTO } from '../../../shared/task';
 import { APIResponse } from '../../../shared/api';
+import logger from '../logger';
 
 const router = Router();
 const taskRepository = new TaskRepository();
@@ -25,7 +26,11 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     };
     res.json(response);
   } catch (error) {
-    console.error('Error fetching tasks:', error);
+    logger.error('Error fetching tasks', {
+      requestId: req.requestId,
+      userId: (req as AuthRequest).user?.uid,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
 });
@@ -62,7 +67,11 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     };
     res.status(201).json(response);
   } catch (error) {
-    console.error('Error creating task:', error);
+    logger.error('Error creating task', {
+      requestId: req.requestId,
+      userId: (req as AuthRequest).user?.uid,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
 });
@@ -96,7 +105,12 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     };
     res.json(response);
   } catch (error) {
-    console.error('Error updating task:', error);
+    logger.error('Error updating task', {
+      requestId: req.requestId,
+      taskId: req.params.id,
+      userId: (req as AuthRequest).user?.uid,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
 });
@@ -118,7 +132,12 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
     await taskRepository.delete(id as string);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting task:', error);
+    logger.error('Error deleting task', {
+      requestId: req.requestId,
+      taskId: req.params.id,
+      userId: (req as AuthRequest).user?.uid,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
 });

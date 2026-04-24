@@ -30,3 +30,9 @@
 - **Decision**: Vitest Adoption.
 - **Rationale**: Faster and more modern test runner that integrates perfectly with Next.js and Tailwind.
 - **Implementation**: Added `vitest` and `jsdom` configuration.
+
+## 6. Staging Hardening (2026-04-23)
+- **Decision**: Complete structured logging migration.
+- **Rationale**: `console.error` calls in `AuthContext.tsx`, `TaskForm.tsx`, and `firebase.ts` bypassed the structured logger, producing unfiltered plaintext in Cloud Logging.
+- **Implementation**: Migrated all `console.error` calls to `logger.error` from `src/lib/logger.ts`. Only one intentional `console.warn` remains in `firebase.ts` for the build-time SSG guard.
+

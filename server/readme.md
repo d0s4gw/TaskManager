@@ -8,22 +8,25 @@ The Logic Tier is a Node.js + Express application built with TypeScript, serving
 - **Framework**: Express
 - **Persistence**: Google Cloud Firestore (via `firebase-admin`)
 - **Authentication**: Firebase Auth (ID Token verification)
-- **Observability**: OpenTelemetry (Traces & Error Reporting)
-- **Containerization**: Docker (optimized for Google Cloud Run)
+- **Observability**: OpenTelemetry (Traces & Error Reporting), Winston (Structured JSON Logging)
+- **Containerization**: Docker (optimized for Google Cloud Run, `node:24-slim`, `npm ci`)
 
 ## Directory Structure
 
 - `src/index.ts`: Entry point and server initialization.
+- `src/logger.ts`: Structured JSON logger (winston).
 - `src/tracing.ts`: OpenTelemetry instrumentation setup.
-- `src/middleware/`: Express middleware (e.g., Auth verification).
+- `src/middleware/auth.ts`: Firebase Auth token verification.
+- `src/middleware/request-id.ts`: Request-ID propagation (reads `X-Request-ID` or generates UUID).
 - `src/repositories/`: Firestore data access layer using the Repository Pattern.
+- `src/routes/`: Express route handlers.
 - `dist/`: Compiled JavaScript output (generated on build).
 
 ## Getting Started
 
 ### Development
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 

@@ -1,7 +1,9 @@
-name: Deploy TaskManager
+name: CI/CD Pipeline
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
 
 permissions:
@@ -9,7 +11,58 @@ permissions:
   id-token: 'write'
 
 jobs:
+  test-server:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - name: Install Server Dependencies
+      run: cd server && npm ci
+
+    - name: Run Server Tests
+      run: cd server && npm test
+
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - name: Install Web Dependencies
+      run: cd web && npm ci
+
+    - name: Run Web Tests
+      run: cd web && npm test
+
+  validate-terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Format Check
+      run: terraform -chdir=terraform fmt -check -recursive -diff
+
+    - name: Terraform Init (backend=false)
+      run: terraform -chdir=terraform init -backend=false
+
+    - name: Terraform Validate
+      run: terraform -chdir=terraform validate
+
   deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-server, test-web, validate-terraform]
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: 'task-manager-staging-494203'

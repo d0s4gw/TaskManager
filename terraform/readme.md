@@ -40,6 +40,6 @@ terraform apply -var-file=environments/prod.tfvars
 ```
 
 ## Security Note
-The `github-deployer` service account currently has `roles/owner` for bootstrapping. It is recommended to scope this down to the specific roles required for Cloud Run and Firestore once the initial infrastructure is stable.
+The `github-deployer` service account is scoped to specific roles required for Cloud Run, Artifact Registry, Firestore, and Firebase Hosting management. See `main.tf` for the full role list.
 
 For a detailed history of design decisions, see [decisions.log](./decisions.log).

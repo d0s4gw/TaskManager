@@ -32,3 +32,21 @@
 ### 7. Deployment Reliability
 - **Decision**: Standardized on Node.js 24 and `npm ci` for the CI/CD runners.
 - **Rationale**: Prevents transient cache errors and ensures consistency between local and cloud environments.
+
+## 2026-04-23 - Staging Hardening
+
+### 8. Environment Portability
+- **Decision**: Parameterize all hardcoded project references in `main.tf`.
+- **Rationale**: The `github-deployer` SA email, WIF pool, WIF provider, and WIF user binding were all hardcoded to the staging project ID, meaning any other workspace would produce broken IAM.
+- **Action**: Replaced all hardcoded `task-manager-staging-494203` references with `var.project_id` interpolations. Removed `count = staging ? 1 : 0` guards on WIF resources.
+
+### 9. State Migration (Moved Blocks)
+- **Decision**: Added `moved` blocks for WIF pool, WIF provider, and WIF user binding.
+- **Rationale**: Removing `count` changes the Terraform state address from `resource[0]` to `resource`. Without `moved` blocks, Terraform would destroy and recreate the resources — and GCP blocks WIF pool ID reuse for 30 days after deletion.
+- **Action**: Added 3 `moved` blocks in `main.tf`.
+
+### 10. CI Terraform Validation
+- **Decision**: Added `terraform fmt -check` and `terraform validate` as a CI gate job.
+- **Rationale**: Catches formatting drift, syntax errors, and broken references before they reach the deploy step.
+- **Action**: Added `validate-terraform` job in `deploy.yml`; deploy depends on it via `needs:`.
+

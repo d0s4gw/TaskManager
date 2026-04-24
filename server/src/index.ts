@@ -8,13 +8,14 @@ import dotenv from 'dotenv';
 import expressWinston from 'express-winston';
 import { APIResponse } from '../../shared/api';
 import logger from './logger';
+import { requestId } from './middleware/request-id';
 
 dotenv.config();
 
 // Initialize Firebase Admin before any routes or repositories are imported
 if (!admin.apps.length) {
   admin.initializeApp({
-    projectId: 'task-manager-staging-494203',
+    projectId: process.env.GOOGLE_CLOUD_PROJECT,
   });
 }
 
@@ -25,13 +26,17 @@ const port = process.env.PORT || 8080;
 
 app.use(express.json());
 
-// Request Logging
+// Assign a unique request ID to every inbound request
+app.use(requestId);
+
+// Request Logging — include requestId in every log line
 app.use(expressWinston.logger({
   winstonInstance: logger,
   meta: true,
   msg: "HTTP {{req.method}} {{req.url}}",
   expressFormat: true,
   colorize: false,
+  dynamicMeta: (req) => ({ requestId: req.requestId }),
 }));
 
 // Health Check Endpoint
@@ -52,9 +57,10 @@ app.get('/health', (req, res) => {
 // Task Routes
 app.use('/api/tasks', taskRoutes);
 
-// Error Logging
+// Error Logging — include requestId in every error log line
 app.use(expressWinston.errorLogger({
-  winstonInstance: logger
+  winstonInstance: logger,
+  dynamicMeta: (req) => ({ requestId: req.requestId }),
 }));
 
 // Start Server

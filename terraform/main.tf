@@ -47,8 +47,22 @@ data "google_project" "project" {
   project_id = var.project_id
 }
 
+moved {
+  from = google_iam_workload_identity_pool.github_pool[0]
+  to   = google_iam_workload_identity_pool.github_pool
+}
+
+moved {
+  from = google_iam_workload_identity_pool_provider.github_provider[0]
+  to   = google_iam_workload_identity_pool_provider.github_provider
+}
+
+moved {
+  from = google_service_account_iam_member.wif_user[0]
+  to   = google_service_account_iam_member.wif_user
+}
+
 resource "google_iam_workload_identity_pool" "github_pool" {
-  count                     = var.environment == "staging" ? 1 : 0
   project                   = var.project_id
   workload_identity_pool_id = "github-pool"
   display_name              = "GitHub Pool"
@@ -56,12 +70,11 @@ resource "google_iam_workload_identity_pool" "github_pool" {
 }
 
 resource "google_iam_workload_identity_pool_provider" "github_provider" {
-  count                              = var.environment == "staging" ? 1 : 0
   project                            = var.project_id
-  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool[0].workload_identity_pool_id
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-deploy-provider"
   display_name                       = "GitHub Provider"
-  
+
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
     "attribute.actor"      = "assertion.actor"
@@ -109,22 +122,22 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/iam.serviceAccountUser",
     "roles/storage.admin", # For Terraform state
     "roles/browser",
-    "roles/secretmanager.admin", # To manage secrets
-    "roles/datastore.owner", # To manage Firestore and indexes
-    "roles/serviceusage.serviceUsageAdmin", # To manage APIs
-    "roles/iam.workloadIdentityPoolAdmin", # To manage WIF
+    "roles/secretmanager.admin",             # To manage secrets
+    "roles/datastore.owner",                 # To manage Firestore and indexes
+    "roles/serviceusage.serviceUsageAdmin",  # To manage APIs
+    "roles/iam.workloadIdentityPoolAdmin",   # To manage WIF
     "roles/resourcemanager.projectIamAdmin", # To manage Project IAM
-    "roles/iam.serviceAccountAdmin", # To manage Service Account IAM
-    "roles/cloudbuild.builds.editor", # To check build status
-    "roles/cloudbuild.builds.viewer", # To view build details
-    "roles/logging.viewer", # To stream build logs
-    "roles/viewer", # Primitive viewer role for gcloud compatibility
-    "roles/firebasehosting.admin", # To deploy web tier
-    "roles/firebase.developAdmin" # For general firebase management
+    "roles/iam.serviceAccountAdmin",         # To manage Service Account IAM
+    "roles/cloudbuild.builds.editor",        # To check build status
+    "roles/cloudbuild.builds.viewer",        # To view build details
+    "roles/logging.viewer",                  # To stream build logs
+    "roles/viewer",                          # Primitive viewer role for gcloud compatibility
+    "roles/firebasehosting.admin",           # To deploy web tier
+    "roles/firebase.developAdmin"            # For general firebase management
   ])
   project = var.project_id
   role    = each.key
-  member  = "serviceAccount:github-deployer@task-manager-staging-494203.iam.gserviceaccount.com"
+  member  = "serviceAccount:github-deployer@${var.project_id}.iam.gserviceaccount.com"
 }
 
 # 7. Cloud Run Service
@@ -136,7 +149,7 @@ resource "google_cloud_run_v2_service" "server" {
 
   template {
     service_account = google_service_account.server_sa.email
-    
+
     scaling {
       min_instance_count = var.environment == "prod" ? 1 : 0
       max_instance_count = 10
@@ -144,7 +157,7 @@ resource "google_cloud_run_v2_service" "server" {
 
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello" # Placeholder for initial bootstrap
-      
+
       resources {
         limits = {
           cpu    = "1"
@@ -186,8 +199,7 @@ resource "google_firestore_index" "task_user_date" {
 
 # 9. Workload Identity User Binding
 resource "google_service_account_iam_member" "wif_user" {
-  count              = var.environment == "staging" ? 1 : 0
-  service_account_id = "projects/task-manager-staging-494203/serviceAccounts/github-deployer@task-manager-staging-494203.iam.gserviceaccount.com"
+  service_account_id = "projects/${var.project_id}/serviceAccounts/github-deployer@${var.project_id}.iam.gserviceaccount.com"
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/d0s4gw/TaskManager"
 }

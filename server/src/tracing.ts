@@ -3,6 +3,7 @@ import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentation
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+import logger from './logger';
 
 const sdk = new NodeSDK({
   resource: new Resource({
@@ -14,12 +15,12 @@ const sdk = new NodeSDK({
 
 export const startTracing = () => {
   sdk.start();
-  console.log('Tracing initialized');
+  logger.info('Tracing initialized');
 };
 
 process.on('SIGTERM', () => {
   sdk.shutdown()
-    .then(() => console.log('Tracing terminated'))
-    .catch((error) => console.log('Error terminating tracing', error))
+    .then(() => logger.info('Tracing terminated'))
+    .catch((error) => logger.error('Error terminating tracing', { error: error instanceof Error ? error.message : String(error) }))
     .finally(() => process.exit(0));
 });
