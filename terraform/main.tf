@@ -122,18 +122,18 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/iam.serviceAccountUser",
     "roles/storage.admin", # For Terraform state
     "roles/browser",
-    "roles/secretmanager.admin",             # To manage secrets
-    "roles/datastore.owner",                 # To manage Firestore and indexes
-    "roles/serviceusage.serviceUsageAdmin",  # To manage APIs
-    "roles/iam.workloadIdentityPoolAdmin",   # To manage WIF
-    "roles/resourcemanager.projectIamAdmin", # To manage Project IAM
-    "roles/iam.serviceAccountAdmin",         # To manage Service Account IAM
-    "roles/cloudbuild.builds.editor",        # To check build status
-    "roles/cloudbuild.builds.viewer",        # To view build details
-    "roles/logging.viewer",                  # To stream build logs
-    "roles/viewer",                          # Primitive viewer role for gcloud compatibility
-    "roles/firebasehosting.admin",           # To deploy web tier
-    "roles/firebase.developAdmin",           # For general firebase management
+    "roles/secretmanager.admin",              # To manage secrets
+    "roles/datastore.owner",                  # To manage Firestore and indexes
+    "roles/serviceusage.serviceUsageAdmin",   # To manage APIs
+    "roles/iam.workloadIdentityPoolAdmin",    # To manage WIF
+    "roles/resourcemanager.projectIamAdmin",  # To manage Project IAM
+    "roles/iam.serviceAccountAdmin",          # To manage Service Account IAM
+    "roles/cloudbuild.builds.editor",         # To check build status
+    "roles/cloudbuild.builds.viewer",         # To view build details
+    "roles/logging.viewer",                   # To stream build logs
+    "roles/viewer",                           # Primitive viewer role for gcloud compatibility
+    "roles/firebasehosting.admin",            # To deploy web tier
+    "roles/firebase.developAdmin",            # For general firebase management
     "roles/serviceusage.serviceUsageConsumer" # For API enablement checks
   ])
   project = var.project_id
