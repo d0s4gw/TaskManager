@@ -1,6 +1,6 @@
 # Next Steps - TaskManager Web
 
-> **Current State**: Web app is live in Staging with full Auth and CRUD connectivity. Build-time crashes are resolved, unit testing is established, structured logging is fully migrated (no `console.error` in source), and CI/CD gates deploys on test results.
+> **Current State**: Web app is live in Staging with full Auth, CRUD, and drag-and-drop. Unit tests (Vitest, 21 tests) and E2E tests (Playwright, 13 tests) both pass. CI/CD pipeline gates deployments on unit tests, E2E tests, and Terraform validation. Structured logging is fully migrated.
 
 ## 1. Environment Configuration
 - [x] Populate `web/.env.local` with real Firebase credentials.
@@ -26,7 +26,18 @@
 - [x] Ensure the GitHub Actions secrets (`WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`) are configured.
 - [x] Monitor the first deployment via the `.github/workflows/deploy.yml` pipeline.
 
-## 6. Future Features
-- [ ] Add drag-and-drop task reordering.
+## 6. Testing
+- [x] Add Vitest unit tests for components (`TaskDetail`, `TaskForm`, `TaskList`) and API client.
+- [x] Add comprehensive E2E tests using Playwright (auth flows, CRUD lifecycle, detail panel).
+- [x] Gate CI/CD deploy on E2E test results (`test-e2e` job in `deploy.yml`).
+
+## 7. Completed Features
+- [x] Add drag-and-drop task reordering (`@dnd-kit`).
+- [x] Add comprehensive E2E tests using Playwright.
+
+## 8. Future Features
 - [ ] Implement real-time task updates using Firestore listeners.
-- [ ] Add comprehensive E2E tests using Playwright.
+- [ ] Add multi-browser E2E testing (Firefox, WebKit) in a nightly CI schedule.
+- [ ] Integrate Firebase Emulator Suite for higher-fidelity auth E2E tests.
+- [ ] Add visual regression testing with Playwright screenshot comparisons.
+- [ ] Add accessibility (a11y) audit tests using `@axe-core/playwright`.

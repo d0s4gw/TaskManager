@@ -9,6 +9,7 @@ export interface Task {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  position: number;
 }
 
 export interface CreateTaskDTO {
@@ -17,6 +18,7 @@ export interface CreateTaskDTO {
   priority?: 'low' | 'medium' | 'high' | 'none';
   dueDate?: string;
   category?: string;
+  position?: number;
 }
 
 export interface UpdateTaskDTO {
@@ -26,4 +28,5 @@ export interface UpdateTaskDTO {
   priority?: 'low' | 'medium' | 'high' | 'none';
   dueDate?: string;
   category?: string;
+  position?: number;
 }

@@ -90,7 +90,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: { message: 'Task not found' } });
     }
 
-    const { title, description, completed, priority, dueDate, category } = req.body as UpdateTaskDTO;
+    const { title, description, completed, priority, dueDate, category, position } = req.body as UpdateTaskDTO;
     const updatedTask: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
@@ -101,6 +101,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     if (priority !== undefined) updatedTask.priority = priority;
     if (dueDate !== undefined) updatedTask.dueDate = dueDate;
     if (category !== undefined) updatedTask.category = category;
+    if (position !== undefined) updatedTask.position = position;
 
     await taskRepository.update(id as string, updatedTask);
     const finalTask = { ...existingTask, ...updatedTask };

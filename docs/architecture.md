@@ -16,7 +16,7 @@
 - **`task-manager-server`**: Runtime identity for the Logic Tier. Granted `roles/datastore.user` and `roles/secretmanager.secretAccessor`.
 
 ## CI/CD Workflow
-1. **Test Gate**: Server (Jest), Web (Vitest), and Terraform (fmt + validate) run in parallel on every push to `main`. Deploy is blocked until all pass.
+1. **Test Gate**: Server (Jest), Web (Vitest), E2E (Playwright), and Terraform (fmt + validate) run on every push to `main`. Deploy is blocked until all pass.
 2. **Terraform**: Synchronizes infrastructure (APIs, IAM, Cloud Run service definitions).
 3. **Cloud Build**: Multi-stage build using `cloudbuild.yaml` to handle root build context and shared types.
 4. **Firebase Hosting**: Deploys the Web Tier (Next.js).
@@ -35,6 +35,7 @@
 
 ## Testing Strategy
 - **Logic Tier**: Jest-based unit and integration tests with ~90% coverage.
-- **Web Tier**: Vitest for component logic and build integrity checks.
+- **Web Tier (Unit)**: Vitest for component logic and build integrity checks.
+- **Web Tier (E2E)**: Playwright tests covering auth flows, CRUD lifecycle, and detail panel interactions. Uses mocked Firebase Auth (`window.__E2E_MOCK_USER__`) and an in-memory task API for full isolation.
 - **Infrastructure**: Terraform `fmt -check` and `validate` run in CI on every push.
 - **Shared**: Type safety enforced across the full stack via shared interfaces.

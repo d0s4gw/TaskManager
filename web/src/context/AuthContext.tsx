@@ -1,6 +1,18 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+
+/** Declare the E2E test hook global. Set by Playwright's addInitScript. */
+declare global {
+  interface Window {
+    __E2E_MOCK_USER__?: {
+      uid: string;
+      email: string;
+      displayName: string;
+      photoURL: string;
+    };
+  }
+}
 import { 
   User, 
   signInWithPopup, 
@@ -25,6 +37,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // E2E test shortcut: if a mock user is injected, use it directly
+    if (typeof window !== 'undefined' && window.__E2E_MOCK_USER__) {
+      const mock = window.__E2E_MOCK_USER__;
+      logger.info('Using E2E mock user', { userId: mock.uid });
+      setUser({
+        ...mock,
+        getIdToken: () => Promise.resolve('e2e-mock-firebase-id-token'),
+      } as unknown as User);
+      setLoading(false);
+      return;
+    }
+
+    // Guard: if Firebase auth is a dummy object (no credentials), stop loading
+    if (!auth || !('onAuthStateChanged' in auth)) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       logger.info('Auth state changed', { userId: user?.uid });
       setUser(user);

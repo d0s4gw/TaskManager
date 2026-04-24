@@ -77,6 +77,7 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
       {/* Panel */}
       <div 
         ref={panelRef}
+        data-testid="task-detail-panel"
         className={`fixed top-0 right-0 h-full w-full md:w-[450px] bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 z-[70] shadow-2xl transition-transform duration-500 ease-in-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {activeTask && (
@@ -85,6 +86,7 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
             <div className="flex items-center justify-between p-6 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center gap-3">
                 <button 
+                  data-testid="task-detail-toggle"
                   onClick={() => onToggle(activeTask.id, !activeTask.completed)}
                   className={`transition-colors ${activeTask.completed ? 'text-green-500' : 'text-zinc-300 dark:text-zinc-700 hover:text-indigo-500'}`}
                 >
@@ -101,6 +103,7 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
                 </div>
               </div>
               <button 
+                data-testid="task-detail-close"
                 onClick={onClose}
                 className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
               >
@@ -189,7 +192,7 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
                 <Trash2 size={16} /> Delete Task
               </button>
               
-              <div className="text-xs text-zinc-400">
+              <div className="text-xs text-zinc-400" data-testid="task-detail-created">
                 Created {new Date(activeTask.createdAt).toLocaleDateString()}
               </div>
             </div>

@@ -15,7 +15,7 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 - **Environment**: Node.js 24 is the project standard. All CI/CD pipelines, Dockerfiles, and local development should target Node 24.
 - **Workflow**: We use GitHub Actions with **Workload Identity Federation (WIF)**. Use `npm ci` for all installations in CI/CD and Dockerfiles to ensure build stability.
 - **Project Number**: The GCP Project Number is `1279412370`.
-- **Promotion Path**: Code is pushed to `main`, which triggers the deploy workflow. Tests (server, web, terraform validate) must **all pass** before the deploy job runs. Production promotion is currently manual via Terraform.
+- **Promotion Path**: Code is pushed to `main`, which triggers the deploy workflow. Tests (server, web unit, web E2E, terraform validate) must **all pass** before the deploy job runs. Production promotion is currently manual via Terraform.
 - **Dockerfile**: Uses multi-stage build with `node:24-slim` and `npm ci` in both stages. Never use `npm install` in the Dockerfile.
 
 ## 📱 Mobile (Flutter) Patterns
@@ -25,7 +25,9 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 ## 🌐 Web (Next.js) Patterns
 - **API Proxy**: Use the `/api` prefix for all backend calls. Firebase Hosting rewrites proxy these calls to the Cloud Run server.
 - **Observability**: Use the structured `JSON` logger in `web/src/lib/logger.ts` for **all** logging. Do not use `console.error` or `console.log` in source files — the only exception is the build-time guard in `firebase.ts`.
-- **Firebase Initialization**: Firebase is initialized with a "build-aware" pattern in `web/src/lib/firebase.ts` to prevent build-time crashes when environment variables are missing.
+- **Firebase Initialization**: Firebase is initialized with a "build-aware" pattern in `web/src/lib/firebase.ts` to prevent build-time crashes when environment variables are missing. `getAuth()` is wrapped in a try/catch to support E2E testing without real credentials.
+- **E2E Testing**: Playwright tests use a `window.__E2E_MOCK_USER__` global to inject a mock Firebase user. The `AuthContext` checks for this global before calling `onAuthStateChanged`. When writing new E2E tests, import the custom `test` fixture from `e2e/fixtures/auth.fixture.ts` instead of `@playwright/test` to get an `authenticatedPage` with a pre-mocked user and API.
+- **Page Object Model**: E2E selectors are encapsulated in Page Object classes under `e2e/pages/`. When adding new UI components, add `data-testid` attributes and update the corresponding Page Object.
 
 ## 🖥️ Server (Express) Patterns
 - **Structured Logging**: Use `winston` via `src/logger.ts` for all logging. Do not use `console.error` or `console.log` — every log entry must be structured JSON for Cloud Logging.
@@ -34,6 +36,7 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 
 ## 🛠 Local Development
 - **Backend**: `npm run dev` in `server/`. Run tests with `npm test`.
-- **Frontend**: `npm run dev` in `web/`. Run tests with `npm test`.
+- **Frontend**: `npm run dev` in `web/`. Run unit tests with `npm test`. Run E2E tests with `npm run test:e2e` (headless) or `npm run test:e2e:ui` (interactive).
 - **Mobile**: `flutter run` in `mobile/`.
 - **Local API**: To test the web-to-server connection locally, ensure you have configured your `.env` files based on the `.env.example` templates in each tier.
+- **E2E Note**: E2E tests mock both Firebase Auth and the Task API at the network layer. No `.env.local` or running server is required — Playwright starts the Next.js dev server automatically.

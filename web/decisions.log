@@ -36,3 +36,35 @@
 - **Rationale**: `console.error` calls in `AuthContext.tsx`, `TaskForm.tsx`, and `firebase.ts` bypassed the structured logger, producing unfiltered plaintext in Cloud Logging.
 - **Implementation**: Migrated all `console.error` calls to `logger.error` from `src/lib/logger.ts`. Only one intentional `console.warn` remains in `firebase.ts` for the build-time SSG guard.
 
+## 7. E2E Testing with Playwright (2026-04-23)
+
+### 7a. Framework Selection: Playwright over Cypress
+- **Decision**: Use Playwright for End-to-End testing.
+- **Rationale**: Playwright is officially recommended by Vercel for Next.js, supports `page.route()` for clean network mocking, provides native parallelism without paid tiers, and includes WebKit support for future Safari testing. Cypress's in-process architecture and paid parallelism made it a weaker fit.
+- **Implementation**: Installed `@playwright/test`, configured `playwright.config.ts` with auto-starting `next dev` via `webServer`.
+
+### 7b. Firebase Auth Mocking: `window.__E2E_MOCK_USER__`
+- **Decision**: Mock Firebase Auth at the application layer via a global window property instead of using the Firebase Emulator Suite.
+- **Rationale**: Network mocks are faster, fully deterministic, and require zero external dependencies. The emulator adds startup time and state management overhead. Mocking via `window.__E2E_MOCK_USER__` keeps tests self-contained — no `.env.local` or running services needed.
+- **Implementation**: `AuthContext.tsx` checks for `window.__E2E_MOCK_USER__` before calling `onAuthStateChanged`. Playwright's `addInitScript` injects the mock user. The auth fixture also intercepts `identitytoolkit.googleapis.com` and `securetoken.googleapis.com` at the network level.
+
+### 7c. Firebase Auth Graceful Degradation
+- **Decision**: Wrap `getAuth()` in a try/catch and guard `onAuthStateChanged` against dummy auth objects.
+- **Rationale**: Without real Firebase credentials (common in E2E tests and CI), `getAuth()` throws `auth/invalid-api-key`, crashing the entire app. The guard allows the app to boot cleanly and lets the mock user injection take over.
+- **Implementation**: `firebase.ts` falls back to an empty object on `getAuth()` failure. `AuthContext.tsx` checks for `onAuthStateChanged` existence before calling it.
+
+### 7d. In-Memory Task API
+- **Decision**: Mock the Task API with an in-memory store scoped per test instead of running the real Express server.
+- **Rationale**: Eliminates backend dependency for E2E tests. Each test gets a fresh store with deterministic seed data, making tests fully isolated and parallelizable.
+- **Implementation**: `e2e/fixtures/auth.fixture.ts` creates a `taskStore` and uses `page.route()` to intercept all `/api/tasks/**` requests, routing them to the in-memory CRUD operations.
+
+### 7e. Page Object Model (POM)
+- **Decision**: Encapsulate UI selectors and interactions in Page Object classes.
+- **Rationale**: Prevents selector duplication across tests and provides a single place to update when the UI changes. Components map 1:1 to page objects.
+- **Implementation**: `DashboardPage` and `TaskDetailPage` under `e2e/pages/`. Components updated with `data-testid` attributes for stable selectors.
+
+### 7f. CI/CD: E2E Test Gate
+- **Decision**: Add a `test-e2e` job to the deploy pipeline, blocking deployments until E2E tests pass.
+- **Rationale**: Unit tests verify components in isolation but cannot catch integration failures (auth → API → UI rendering). E2E tests close this gap.
+- **Implementation**: New `test-e2e` job in `deploy.yml` runs after unit tests pass, installs only Chromium for speed, and uploads the Playwright HTML report as a build artifact. Deploy `needs` updated to include `test-e2e`.
+

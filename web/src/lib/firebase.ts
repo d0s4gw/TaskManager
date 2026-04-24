@@ -34,5 +34,18 @@ if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY)
   }
 }
 
-export const auth = typeof window !== "undefined" ? getAuth(app) : ({} as any);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let auth: ReturnType<typeof getAuth> = {} as any;
+if (typeof window !== "undefined") {
+  try {
+    auth = getAuth(app);
+  } catch {
+    // Firebase Auth initialization failed — expected during E2E tests
+    // or when environment variables are missing.
+    auth = {} as any;
+  }
+} else {
+  auth = {} as any;
+}
+export { auth };
 export default app;

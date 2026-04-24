@@ -12,6 +12,7 @@ const mockFirestore = {
   collection: jest.fn().mockReturnThis(),
   where: jest.fn().mockReturnThis(),
   orderBy: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
   get: jest.fn(),
   doc: jest.fn(() => mockDoc),
 };
@@ -52,11 +53,13 @@ describe('TaskRepository', () => {
       // Override doc mock for this test to return id
       const mockDocRef = { id: 'generated-id', set: jest.fn() };
       mockFirestore.doc.mockReturnValueOnce(mockDocRef as any);
+      // Mock the position query returning empty (no existing tasks)
+      mockFirestore.get.mockResolvedValueOnce({ empty: true, docs: [] });
 
       const result = await repository.createWithId(taskData as any);
 
-      expect(result).toEqual({ ...taskData, id: 'generated-id' });
-      expect(mockDocRef.set).toHaveBeenCalledWith({ ...taskData, id: 'generated-id' });
+      expect(result).toEqual({ ...taskData, id: 'generated-id', position: 0 });
+      expect(mockDocRef.set).toHaveBeenCalledWith({ ...taskData, id: 'generated-id', position: 0 });
     });
   });
 

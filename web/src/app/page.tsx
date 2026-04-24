@@ -9,6 +9,18 @@ import { Task, CreateTaskDTO, UpdateTaskDTO } from "../../../shared/task";
 import { APIResponse } from "../../../shared/api";
 import { LogOut, Loader2 } from "lucide-react";
 import { TaskApi } from "@/lib/api";
+import { reorderTasks } from "@/lib/reorder";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+} from '@dnd-kit/sortable';
 
 export default function Home() {
   const { user, loading: authLoading, loginWithGoogle, logout } = useAuth();
@@ -45,7 +57,7 @@ export default function Home() {
     setError(null);
     try {
       const newTask = await getApi().createTask(taskData);
-      setTasks([newTask, ...tasks]);
+      setTasks([...tasks, newTask]);
     } catch (err: any) {
       setError(err.message || "Failed to add task");
     }
@@ -63,12 +75,49 @@ export default function Home() {
 
     try {
       await getApi().updateTask(id, updates);
-    } catch (err) {
+    } catch (err: any) {
       setTasks(originalTasks);
       if (selectedTask?.id === id) setSelectedTask(tasks.find(t => t.id === id) || null);
       setError("Failed to update task");
     }
   };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = tasks.findIndex((t) => t.id === active.id);
+    const newIndex = tasks.findIndex((t) => t.id === over.id);
+
+    const newTasks = reorderTasks(tasks, oldIndex, newIndex);
+    
+    // Optimistically update the UI
+    setTasks(newTasks);
+
+    // Persist new order
+    try {
+      const api = getApi();
+      const updates = newTasks
+        .filter((task, index) => {
+          // Only update tasks that actually changed position compared to current state
+          return tasks.find(t => t.id === task.id)?.position !== index;
+        })
+        .map(task => api.updateTask(task.id, { position: task.position }));
+
+      await Promise.all(updates);
+    } catch (err: any) {
+      setError("Failed to save new order");
+      fetchTasks(); // Revert to server state
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const handleToggleTask = async (id: string, completed: boolean) => {
     await handleUpdateTask(id, { completed });
@@ -170,7 +219,7 @@ export default function Home() {
             </div>
 
             {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-2xl text-red-600 dark:text-red-400 text-sm flex items-center justify-between">
+              <div data-testid="error-banner" className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-2xl text-red-600 dark:text-red-400 text-sm flex items-center justify-between">
                 <span>{error}</span>
                 <button onClick={() => setError(null)} className="font-bold">×</button>
               </div>
@@ -183,12 +232,18 @@ export default function Home() {
                 <Loader2 size={32} className="animate-spin text-zinc-300" />
               </div>
             ) : (
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
               <TaskList 
                 tasks={tasks} 
                 onToggle={handleToggleTask} 
                 onDelete={handleDeleteTask} 
                 onSelectTask={(task) => setSelectedTask(task)}
               />
+            </DndContext>
             )}
           </div>
         )}

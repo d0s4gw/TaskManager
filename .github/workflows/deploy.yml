@@ -43,6 +43,34 @@ jobs:
     - name: Run Web Tests
       run: cd web && npm test
 
+  test-e2e:
+    runs-on: ubuntu-latest
+    needs: [test-server, test-web]
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - name: Install Web Dependencies
+      run: cd web && npm ci
+
+    - name: Install Playwright Browsers
+      run: cd web && npx playwright install --with-deps chromium
+
+    - name: Run E2E Tests
+      run: cd web && npx playwright test
+
+    - name: Upload Playwright Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: web/playwright-report/
+        retention-days: 14
+
   validate-terraform:
     runs-on: ubuntu-latest
     steps:
@@ -62,7 +90,7 @@ jobs:
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [test-server, test-web, validate-terraform]
+    needs: [test-server, test-web, test-e2e, validate-terraform]
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: 'task-manager-staging-494203'

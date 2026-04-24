@@ -10,16 +10,35 @@ export class TaskRepository extends BaseRepository<Task> {
   async getByUserId(userId: string): Promise<Task[]> {
     const snapshot = await this.collection
       .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
+      .orderBy('position', 'asc')
       .get();
     return snapshot.docs.map(doc => doc.data() as Task);
   }
 
-  async createWithId(data: Omit<Task, 'id'>): Promise<Task> {
+  async createWithId(data: Omit<Task, 'id' | 'position'> & { position?: number }): Promise<Task> {
     const docRef = this.collection.doc();
+    
+    // If position is not provided, find the current max and add 1
+    let position = data.position;
+    if (position === undefined) {
+      const lastTaskSnapshot = await this.collection
+        .where('userId', '==', data.userId)
+        .orderBy('position', 'desc')
+        .limit(1)
+        .get();
+      
+      if (!lastTaskSnapshot.empty) {
+        const lastTask = lastTaskSnapshot.docs[0].data() as Task;
+        position = (lastTask.position || 0) + 1;
+      } else {
+        position = 0;
+      }
+    }
+
     const newTask: Task = {
       ...data,
       id: docRef.id,
+      position: position!,
     } as Task;
     await docRef.set(newTask);
     return newTask;

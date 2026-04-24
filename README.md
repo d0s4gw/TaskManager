@@ -21,7 +21,7 @@ The project uses a fully automated CI/CD pipeline in GitHub Actions.
 
 ### Staging Environment
 Push to the `main` branch to trigger:
-1. **Test Gate**: Server (Jest), Web (Vitest), and Terraform (validate + fmt) must all pass.
+1. **Test Gate**: Server (Jest), Web (Vitest), E2E (Playwright), and Terraform (validate + fmt) must all pass.
 2. **Infra Sync**: Terraform updates roles, APIs, and scaling.
 3. **Build**: Cloud Build compiles the Logic Tier with shared dependencies.
 4. **Deploy**: Automatic rollout to Cloud Run and Firebase Hosting.
@@ -37,7 +37,9 @@ Create `.env` files in `/server` and `/web` based on the provided `.env.example`
 
 ### 3. Run Tests
 - **Server**: `cd server && npm test` (includes coverage report)
-- **Web**: `cd web && npm test` (runs Vitest suite)
+- **Web (Unit)**: `cd web && npm test` (runs Vitest suite)
+- **Web (E2E)**: `cd web && npm run test:e2e` (runs Playwright against local dev server)
+- **Web (E2E UI)**: `cd web && npm run test:e2e:ui` (interactive Playwright test runner)
 
 ## 🔐 Security Standards
 - **Workload Identity Federation**: Zero static keys for deployment.

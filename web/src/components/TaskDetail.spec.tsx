@@ -13,6 +13,7 @@ const mockTask: Task = {
   userId: 'u1',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
+  position: 0,
 };
 
 describe('TaskDetail', () => {
