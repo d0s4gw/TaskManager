@@ -139,8 +139,7 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/firebasehosting.admin",            # To deploy web tier
     "roles/firebase.developAdmin",            # For general firebase management
     "roles/monitoring.editor",                # To create and manage dashboards
-    "roles/compute.networkAdmin",             # To manage NEGs and Forwarding Rules
-    "roles/compute.securityAdmin",            # To manage Cloud Armor
+    "roles/compute.admin",                    # Full compute access (NEGs, Load Balancers, Cloud Armor)
     "roles/serviceusage.serviceUsageConsumer" # For API enablement checks
   ])
   project = var.project_id
