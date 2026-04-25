@@ -156,7 +156,7 @@ jobs:
         npm ci
         npm run build
         cd ..
-        npx firebase-tools deploy --only hosting --project $PROJECT_ID
+        npx firebase-tools deploy --only hosting,firestore --project $PROJECT_ID
       env:
         NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY_STAGING }}
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -222,7 +222,7 @@ jobs:
         npm ci
         npm run build
         cd ..
-        npx firebase-tools deploy --only hosting --project $PROJECT_ID
+        npx firebase-tools deploy --only hosting,firestore --project $PROJECT_ID
       env:
         NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY_PROD }}
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN_PROD }}
