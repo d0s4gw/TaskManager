@@ -1,4 +1,13 @@
 import 'module-alias/register';
+import * as moduleAlias from 'module-alias';
+import path from 'path';
+
+// Setup module aliases programmatically in production
+if (process.env.NODE_ENV === 'production') {
+  // In production, we run from dist/server/src/index.js
+  // @shared is at dist/shared relative to this file
+  moduleAlias.addAlias('@shared', path.join(__dirname, '../../shared'));
+}
 import { startTracing } from './tracing';
 // Start tracing before any other imports to ensure auto-instrumentation works
 startTracing();

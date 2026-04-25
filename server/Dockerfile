@@ -35,15 +35,15 @@ RUN npm ci --omit=dev --workspace server --workspace shared
 
 # Copy built assets from builder
 COPY --from=builder /app/server/dist /app/server/dist
-COPY --from=builder /app/shared /app/shared
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
+
 WORKDIR /app/server
 
 # Expose port
 EXPOSE 8080
 
-# Start
-CMD ["node", "dist/server/src/index.js"]
+# Start using the verified npm start script
+CMD ["npm", "start"]
