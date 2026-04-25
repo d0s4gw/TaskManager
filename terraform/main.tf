@@ -138,6 +138,7 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/viewer",                           # Primitive viewer role for gcloud compatibility
     "roles/firebasehosting.admin",            # To deploy web tier
     "roles/firebase.developAdmin",            # For general firebase management
+    "roles/monitoring.editor",                # To create and manage dashboards
     "roles/serviceusage.serviceUsageConsumer" # For API enablement checks
   ])
   project = var.project_id
@@ -317,6 +318,8 @@ resource "google_billing_budget" "budget" {
   billing_account = var.billing_account
   display_name    = "TaskManager Budget (${var.environment})"
 
+  depends_on = [google_project_service.services]
+
   budget_filter {
     projects = ["projects/${data.google_project.project.number}"]
   }
@@ -343,6 +346,7 @@ resource "google_billing_budget" "budget" {
 # 13. Monitoring Dashboard
 resource "google_monitoring_dashboard" "dashboard" {
   project        = var.project_id
+  depends_on     = [google_project_service.services]
   dashboard_json = <<EOF
 {
   "displayName": "TaskManager Health (${var.environment})",
