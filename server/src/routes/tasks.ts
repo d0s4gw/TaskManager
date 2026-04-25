@@ -1,12 +1,25 @@
 import { Router, Response } from 'express';
 import { AuthRequest, verifyToken } from '../middleware/auth';
-import { TaskRepository } from '../repositories/task.repository';
+import { ITaskRepository, TaskRepository } from '../repositories/task.repository';
+import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
 import { CreateTaskDTO, UpdateTaskDTO } from '../../../shared/task';
 import { APIResponse } from '../../../shared/api';
 import logger from '../logger';
 
 const router = Router();
-const taskRepository = new TaskRepository();
+
+// Use in-memory repository for development to avoid Java/Emulator dependency
+const useMockRepo = process.env.NODE_ENV === 'development';
+let taskRepository: ITaskRepository;
+
+if (useMockRepo) {
+  const mockRepo = new InProcessTaskRepository();
+  mockRepo.seed('mock-user-123');
+  taskRepository = mockRepo;
+  logger.info('Using In-Memory Task Repository (Seeded)');
+} else {
+  taskRepository = new TaskRepository();
+}
 
 // Apply auth middleware to all task routes
 router.use(verifyToken);
@@ -20,6 +33,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     }
 
     const tasks = await taskRepository.getByUserId(userId);
+    logger.info('Fetched tasks', { userId, count: tasks.length });
     const response: APIResponse<any> = {
       success: true,
       data: tasks,

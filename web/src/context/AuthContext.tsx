@@ -27,6 +27,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginWithMock: () => void;
   logout: () => Promise<void>;
 }
 
@@ -73,6 +74,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithMock = () => {
+    if (process.env.NODE_ENV !== 'development') return;
+    
+    const mockUser = {
+      uid: 'mock-user-123',
+      email: 'agent@test.com',
+      displayName: 'Agent Gemini',
+      photoURL: 'https://lh3.googleusercontent.com/a/mock',
+      getIdToken: () => Promise.resolve('e2e-mock-firebase-id-token'),
+    } as unknown as User;
+    
+    logger.info('Manually triggering mock login');
+    setUser(mockUser);
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -82,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginWithMock, logout }}>
       {children}
     </AuthContext.Provider>
   );

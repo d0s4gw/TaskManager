@@ -14,8 +14,12 @@ dotenv.config();
 
 // Initialize Firebase Admin before any routes or repositories are imported
 if (!admin.apps.length) {
+  if (process.env.NODE_ENV === 'development') {
+    process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8081';
+    logger.info('Using Firestore Emulator at localhost:8081');
+  }
   admin.initializeApp({
-    projectId: process.env.GOOGLE_CLOUD_PROJECT,
+    projectId: process.env.GOOGLE_CLOUD_PROJECT || 'task-manager-dev',
   });
 }
 
@@ -41,6 +45,9 @@ app.use(expressWinston.logger({
   dynamicMeta: (req) => ({ requestId: req.requestId }),
 }));
 
+// Task Routes
+app.use('/api/tasks', taskRoutes);
+
 // Health Check Endpoint
 app.get('/health', (req, res) => {
   const response: APIResponse<{ status: string; uptime: number }> = {
@@ -56,10 +63,6 @@ app.get('/health', (req, res) => {
   res.status(200).json(response);
 });
 
-// Task Routes
-app.use('/api/tasks', taskRoutes);
-
-// Error Logging — include requestId in every error log line
 app.use(expressWinston.errorLogger({
   winstonInstance: logger,
   dynamicMeta: (req) => ({ requestId: req.requestId }),

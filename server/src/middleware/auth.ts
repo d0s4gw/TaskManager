@@ -18,6 +18,27 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
 
   const token = authHeader.split(' ')[1];
 
+  // E2E Test / Local Dev Bypass
+  if (process.env.NODE_ENV === 'development' && token === 'e2e-mock-firebase-id-token') {
+    req.user = {
+      uid: 'mock-user-123',
+      email: 'agent@test.com',
+      name: 'Agent Gemini',
+      picture: 'https://lh3.googleusercontent.com/a/mock',
+      auth_time: Math.floor(Date.now() / 1000),
+      iss: 'https://securetoken.google.com/mock-project',
+      aud: 'mock-project',
+      sub: 'mock-user-123',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      firebase: {
+        identities: { 'google.com': ['agent@test.com'] },
+        sign_in_provider: 'google.com'
+      }
+    } as admin.auth.DecodedIdToken;
+    return next();
+  }
+
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
     req.user = decodedToken;

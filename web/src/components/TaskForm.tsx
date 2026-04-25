@@ -4,12 +4,27 @@ import React, { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { CreateTaskDTO } from '../../../shared/task';
 import { logger } from '../lib/logger';
+import { PredictiveInput } from './PredictiveInput';
+
+const DEFAULT_SUGGESTIONS = [
+  "Meeting with",
+  "Call",
+  "Review",
+  "Buy",
+  "Schedule",
+  "Draft",
+  "Fix",
+  "Send email to",
+  "Check",
+  "Prepare"
+];
 
 interface TaskFormProps {
   onAddTask: (task: CreateTaskDTO) => Promise<void>;
+  suggestions?: string[];
 }
 
-export function TaskForm({ onAddTask }: TaskFormProps) {
+export function TaskForm({ onAddTask, suggestions = [] }: TaskFormProps) {
   const [title, setTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,13 +48,13 @@ export function TaskForm({ onAddTask }: TaskFormProps) {
       onSubmit={handleSubmit} 
       className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full px-6 py-3 shadow-sm hover:shadow-md transition-shadow mb-8 flex items-center gap-4"
     >
-      <input
-        type="text"
+      <PredictiveInput
         placeholder="What needs to be done? (Press Enter)"
         className="flex-1 bg-transparent text-lg font-medium text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 border-none focus:ring-0 p-0"
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onValueChange={setTitle}
         disabled={isSubmitting}
+        suggestions={[...new Set([...DEFAULT_SUGGESTIONS, ...suggestions])]}
         autoFocus
       />
       <button

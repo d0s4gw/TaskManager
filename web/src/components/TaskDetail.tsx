@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Calendar, AlertCircle, Trash2, CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { Task, UpdateTaskDTO } from '../../../shared/task';
+import { PredictiveInput } from './PredictiveInput';
 
 interface TaskDetailProps {
   task: Task | null;
@@ -11,9 +12,10 @@ interface TaskDetailProps {
   onUpdate: (id: string, updates: UpdateTaskDTO) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onToggle: (id: string, completed: boolean) => Promise<void>;
+  suggestions?: string[];
 }
 
-export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle }: TaskDetailProps) {
+export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle, suggestions = [] }: TaskDetailProps) {
   // Store the last non-null task to keep content visible during slide-out animation
   const [activeTask, setActiveTask] = useState<Task | null>(task);
   const [prevTaskId, setPrevTaskId] = useState<string | undefined>(task?.id);
@@ -116,13 +118,13 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
               {/* Title */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Title</label>
-                <input 
-                  type="text"
+                <PredictiveInput 
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onValueChange={setTitle}
                   onBlur={() => handleBlur('title', title)}
                   className="w-full bg-transparent text-2xl font-bold text-zinc-900 dark:text-white border-none focus:ring-0 p-0 placeholder-zinc-300"
                   placeholder="Task title"
+                  suggestions={suggestions}
                 />
               </div>
 

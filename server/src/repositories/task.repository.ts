@@ -2,7 +2,15 @@ import { BaseRepository } from './base.repository';
 import { Task } from '../../../shared/task';
 import * as admin from 'firebase-admin';
 
-export class TaskRepository extends BaseRepository<Task> {
+export interface ITaskRepository {
+  getByUserId(userId: string): Promise<Task[]>;
+  createWithId(data: Omit<Task, 'id' | 'position'> & { position?: number }): Promise<Task>;
+  getByIdAndUserId(id: string, userId: string): Promise<Task | null>;
+  update(id: string, data: Partial<Task>): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+export class TaskRepository extends BaseRepository<Task> implements ITaskRepository {
   constructor() {
     super('tasks');
   }
