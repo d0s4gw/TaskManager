@@ -11,15 +11,16 @@ describe('PredictiveInput', () => {
     expect(screen.getByPlaceholderText('Test input')).toBeInTheDocument();
   });
 
-  it('shows suggestions when typing', () => {
+  it('shows ghost text when typing', () => {
     render(<PredictiveInput suggestions={mockSuggestions} onValueChange={onValueChange} />);
     const input = screen.getByRole('textbox');
     
     fireEvent.change(input, { target: { value: 'mee' } });
     
-    expect(screen.getByText('Meeting')).toBeInTheDocument();
-    expect(screen.getByText('Meet friend')).toBeInTheDocument();
-    expect(screen.queryByText('Call boss')).not.toBeInTheDocument();
+    // 'ting' is the ghost suffix for 'Meeting'
+    expect(screen.getByText('ting')).toBeInTheDocument();
+    // 't friend' would be for 'Meet friend', but we only show the top match
+    expect(screen.queryByText('t friend')).not.toBeInTheDocument();
   });
 
   it('accepts suggestion with Tab key', () => {
@@ -33,26 +34,25 @@ describe('PredictiveInput', () => {
     expect(onValueChange).toHaveBeenCalledWith('Meeting');
   });
 
-  it('accepts suggestion with click', () => {
+  it('accepts suggestion with ArrowRight key', () => {
     render(<PredictiveInput suggestions={mockSuggestions} onValueChange={onValueChange} />);
     const input = screen.getByRole('textbox');
     
     fireEvent.change(input, { target: { value: 'mee' } });
-    const suggestionBtn = screen.getByText('Meeting');
-    fireEvent.click(suggestionBtn);
+    fireEvent.keyDown(input, { key: 'ArrowRight' });
     
     expect(input).toHaveValue('Meeting');
     expect(onValueChange).toHaveBeenCalledWith('Meeting');
   });
 
-  it('hides suggestions on Escape', () => {
+  it('hides ghost text on Escape', () => {
     render(<PredictiveInput suggestions={mockSuggestions} onValueChange={onValueChange} />);
     const input = screen.getByRole('textbox');
     
     fireEvent.change(input, { target: { value: 'mee' } });
-    expect(screen.getByText('Meeting')).toBeInTheDocument();
+    expect(screen.getByText('ting')).toBeInTheDocument();
     
     fireEvent.keyDown(input, { key: 'Escape' });
-    expect(screen.queryByText('Meeting')).not.toBeInTheDocument();
+    expect(screen.queryByText('ting')).not.toBeInTheDocument();
   });
 });
