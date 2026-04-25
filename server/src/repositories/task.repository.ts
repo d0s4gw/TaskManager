@@ -1,5 +1,5 @@
 import { BaseRepository } from './base.repository';
-import { Task } from '../../../shared/task';
+import { Task } from '@shared/task';
 import * as admin from 'firebase-admin';
 
 export interface ITaskRepository {

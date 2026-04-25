@@ -6,7 +6,7 @@ import express from 'express';
 import * as admin from 'firebase-admin';
 import dotenv from 'dotenv';
 import expressWinston from 'express-winston';
-import { APIResponse } from '../../shared/api';
+import { APIResponse } from '@shared/api';
 import logger from './logger';
 import { requestId } from './middleware/request-id';
 

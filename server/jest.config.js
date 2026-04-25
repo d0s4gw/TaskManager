@@ -4,6 +4,6 @@ export default {
   moduleNameMapper: {
     '^@shared/(.*)$': '<rootDir>/../shared/$1'
   },
-  modulePaths: ['<rootDir>/node_modules'],
+  modulePaths: ['<rootDir>/node_modules', '<rootDir>/../node_modules'],
   testMatch: ['**/src/**/*.spec.ts']
 };

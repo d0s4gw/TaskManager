@@ -2,16 +2,23 @@
   "name": "task-manager-root",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "server",
+    "web",
+    "shared",
+    "mobile"
+  ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix web\"",
-    "install-all": "npm install && npm install --prefix server && npm install --prefix web",
-    "test": "npm test --prefix server && npm test --prefix web",
+    "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace web\"",
+    "install-all": "npm install",
+    "test": "npm test --workspaces",
     "prepare": "husky"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
     "husky": "^9.1.7",
-    "lint-staged": "^16.4.0"
+    "lint-staged": "^16.4.0",
+    "zod": "^4.3.6"
   },
   "lint-staged": {
     "server/src/**/*.ts": [

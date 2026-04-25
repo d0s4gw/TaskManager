@@ -1,5 +1,5 @@
 import { InProcessRepository } from './in-process.repository';
-import { Task } from '../../../shared/task';
+import { Task } from '@shared/task';
 import { ITaskRepository } from './task.repository';
 
 export class InProcessTaskRepository extends InProcessRepository<Task> implements ITaskRepository {

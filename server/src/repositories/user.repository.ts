@@ -1,5 +1,5 @@
 import { BaseRepository } from './base.repository';
-import { User } from '../../../shared/user';
+import { User } from '@shared/user';
 
 export class UserRepository extends BaseRepository<User> {
   constructor() {
