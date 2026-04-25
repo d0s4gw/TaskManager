@@ -1,7 +1,9 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 import { logger } from "./logger";
+
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -43,16 +45,23 @@ if (typeof window !== "undefined") {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let auth: ReturnType<typeof getAuth> = {} as any;
+let db: ReturnType<typeof getFirestore> = {} as any;
+
 if (typeof window !== "undefined") {
   try {
     auth = getAuth(app);
+    db = getFirestore(app);
   } catch {
-    // Firebase Auth initialization failed — expected during E2E tests
+    // Firebase initialization failed — expected during E2E tests
     // or when environment variables are missing.
     auth = {} as any;
+    db = {} as any;
   }
 } else {
   auth = {} as any;
+  db = {} as any;
 }
-export { auth };
+
+export { auth, db };
 export default app;
+

@@ -31,7 +31,12 @@ export default function Home() {
 
   useEffect(() => {
     if (user) {
-      fetchTasks();
+      setTasksLoading(true);
+      const unsubscribe = getApi().subscribeToTasks(user.uid, (data) => {
+        setTasks(data);
+        setTasksLoading(false);
+      });
+      return () => unsubscribe();
     } else {
       setTasks([]);
     }
@@ -39,25 +44,11 @@ export default function Home() {
 
   const getApi = () => new TaskApi(() => user?.getIdToken() || Promise.resolve(undefined));
 
-  const fetchTasks = async () => {
-    if (!user) return;
-    setTasksLoading(true);
-    setError(null);
-    try {
-      const data = await getApi().getTasks();
-      setTasks(data);
-    } catch (err: any) {
-      setError(err.message === "Unauthorized" ? "Session expired. Please log in again." : "Failed to connect to API");
-    } finally {
-      setTasksLoading(false);
-    }
-  };
-
   const handleAddTask = async (taskData: CreateTaskDTO) => {
     setError(null);
     try {
       const newTask = await getApi().createTask(taskData);
-      setTasks([...tasks, newTask]);
+      setTasks(prev => [...prev, newTask]);
     } catch (err: any) {
       setError(err.message || "Failed to add task");
     }
@@ -66,9 +57,8 @@ export default function Home() {
   const handleUpdateTask = async (id: string, updates: UpdateTaskDTO) => {
     setError(null);
     const originalTasks = [...tasks];
-    setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t));
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
     
-    // Update selectedTask if it's the one being edited
     if (selectedTask?.id === id) {
       setSelectedTask(prev => prev ? { ...prev, ...updates } : null);
     }
@@ -77,7 +67,6 @@ export default function Home() {
       await getApi().updateTask(id, updates);
     } catch (err: any) {
       setTasks(originalTasks);
-      if (selectedTask?.id === id) setSelectedTask(tasks.find(t => t.id === id) || null);
       setError("Failed to update task");
     }
   };
@@ -89,17 +78,15 @@ export default function Home() {
     const oldIndex = tasks.findIndex((t) => t.id === active.id);
     const newIndex = tasks.findIndex((t) => t.id === over.id);
 
-    const newTasks = reorderTasks(tasks, oldIndex, newIndex);
+    const newTasks = arrayMove(tasks, oldIndex, newIndex)
+      .map((t, i) => ({ ...t, position: i }));
     
-    // Optimistically update the UI
     setTasks(newTasks);
 
-    // Persist new order
     try {
       const api = getApi();
       const updates = newTasks
         .filter((task, index) => {
-          // Only update tasks that actually changed position compared to current state
           return tasks.find(t => t.id === task.id)?.position !== index;
         })
         .map(task => api.updateTask(task.id, { position: task.position }));
@@ -107,7 +94,7 @@ export default function Home() {
       await Promise.all(updates);
     } catch (err: any) {
       setError("Failed to save new order");
-      fetchTasks(); // Revert to server state
+      // Listener will eventually sync back if needed
     }
   };
 
@@ -126,7 +113,7 @@ export default function Home() {
   const handleDeleteTask = async (id: string) => {
     setError(null);
     const originalTasks = [...tasks];
-    setTasks(tasks.filter(t => t.id !== id));
+    setTasks(prev => prev.filter(t => t.id !== id));
     if (selectedTask?.id === id) setSelectedTask(null);
     
     try {
@@ -136,6 +123,8 @@ export default function Home() {
       setError("Failed to delete task");
     }
   };
+
+
 
   if (authLoading) {
     return (

@@ -8,8 +8,12 @@ resource "google_project_service" "services" {
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "cloudresourcemanager.googleapis.com",
-    "sts.googleapis.com"
+    "sts.googleapis.com",
+    "billingbudgets.googleapis.com",
+    "monitoring.googleapis.com",
+    "compute.googleapis.com"
   ])
+
   project            = var.project_id
   service            = each.key
   disable_on_destroy = false
@@ -179,9 +183,101 @@ resource "google_cloud_run_v2_service" "server" {
   }
 
   depends_on = [google_project_service.services]
+
+  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 }
 
-# 8. Firestore Composite Indexes
+# 8. Load Balancer & Cloud Armor
+resource "google_compute_security_policy" "cloud_armor" {
+  project     = var.project_id
+  name        = "task-manager-armor"
+  description = "Cloud Armor policy for TaskManager"
+
+  rule {
+    action   = "allow"
+    priority = "2147483647"
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config {
+        src_ip_ranges = ["*"]
+      }
+    }
+    description = "Default allow rule"
+  }
+
+  rule {
+    action   = "deny(403)"
+    priority = "1000"
+    match {
+      expr {
+        expression = "evaluatePreconfiguredExpr('sqli-v33-stable')"
+      }
+    }
+    description = "SQL Injection protection"
+  }
+
+  rule {
+    action   = "deny(403)"
+    priority = "1001"
+    match {
+      expr {
+        expression = "evaluatePreconfiguredExpr('xss-v33-stable')"
+      }
+    }
+    description = "XSS protection"
+  }
+}
+
+resource "google_compute_region_network_endpoint_group" "server_neg" {
+  project               = var.project_id
+  name                  = "server-neg"
+  region                = var.region
+  network_endpoint_type = "SERVERLESS"
+  cloud_run {
+    service = google_cloud_run_v2_service.server.name
+  }
+}
+
+resource "google_compute_region_backend_service" "server_backend" {
+  project               = var.project_id
+  name                  = "server-backend"
+  region                = var.region
+  protocol              = "HTTP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  security_policy       = google_compute_security_policy.cloud_armor.id
+
+  backend {
+    group = google_compute_region_network_endpoint_group.server_neg.id
+  }
+}
+
+resource "google_compute_region_url_map" "lb_url_map" {
+  project         = var.project_id
+  name            = "task-manager-url-map"
+  region          = var.region
+  default_service = google_compute_region_backend_service.server_backend.id
+}
+
+resource "google_compute_region_target_http_proxy" "http_proxy" {
+  project = var.project_id
+  name    = "task-manager-proxy"
+  region  = var.region
+  url_map = google_compute_region_url_map.lb_url_map.id
+}
+
+resource "google_compute_forwarding_rule" "http_rule" {
+  project               = var.project_id
+  name                  = "task-manager-forwarding-rule"
+  region                = var.region
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range            = "80"
+  target                = google_compute_region_target_http_proxy.http_proxy.id
+  network_tier          = "STANDARD"
+}
+
+# 9. Firestore Composite Indexes
+
 resource "google_firestore_index" "task_user_date" {
   project    = var.project_id
   database   = google_firestore_database.database.name
@@ -220,3 +316,83 @@ resource "google_cloud_run_v2_service_iam_member" "public_access" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# 12. Budget Alerts
+resource "google_billing_budget" "budget" {
+  billing_account = var.billing_account
+  display_name    = "TaskManager Budget (${var.environment})"
+
+  budget_filter {
+    projects = ["projects/${data.google_project.project.number}"]
+  }
+
+  amount {
+    specified_amount {
+      currency_code = "USD"
+      units         = "10" # $10 limit for safety
+    }
+  }
+
+  threshold_rules {
+    threshold_percent = 0.5
+  }
+  threshold_rules {
+    threshold_percent = 0.9
+  }
+  threshold_rules {
+    threshold_percent = 1.0
+    spend_basis       = "FORECASTED_SPEND"
+  }
+}
+
+# 13. Monitoring Dashboard
+resource "google_monitoring_dashboard" "dashboard" {
+  project        = var.project_id
+  dashboard_json = <<EOF
+{
+  "displayName": "TaskManager Health (${var.environment})",
+  "gridLayout": {
+    "columns": "2",
+    "widgets": [
+      {
+        "title": "Cloud Run Request Count",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_run_revision\" metric.type=\"run.googleapis.com/request_count\" resource.labels.service_name=\"${google_cloud_run_v2_service.server.name}\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              },
+              "plotType": "LINE"
+            }
+          ]
+        }
+      },
+      {
+        "title": "Cloud Run Latency (ms)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_run_revision\" metric.type=\"run.googleapis.com/request_latencies\" resource.labels.service_name=\"${google_cloud_run_v2_service.server.name}\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_DELTA"
+                  }
+                }
+              },
+              "plotType": "LINE"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+EOF
+}
+

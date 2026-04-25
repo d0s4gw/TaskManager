@@ -4,7 +4,10 @@ import { ITaskRepository, TaskRepository } from '../repositories/task.repository
 import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
 import { CreateTaskDTO, UpdateTaskDTO } from '../../../shared/task';
 import { APIResponse } from '../../../shared/api';
+import { createTaskSchema, updateTaskSchema } from '../validation/task.schema';
 import logger from '../logger';
+import { ZodError } from 'zod';
+
 
 const router = Router();
 
@@ -57,10 +60,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
     }
 
-    const { title, description, priority, dueDate, category } = req.body as CreateTaskDTO;
-    if (!title) {
-      return res.status(400).json({ success: false, error: { message: 'Title is required' } });
-    }
+    const validatedData = createTaskSchema.parse(req.body);
+    const { title, description, priority, dueDate, category } = validatedData;
 
     const now = new Date().toISOString();
     const newTask = await taskRepository.createWithId({
@@ -75,12 +76,22 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       updatedAt: now,
     });
 
+
     const response: APIResponse<any> = {
       success: true,
       data: newTask,
     };
     res.status(201).json(response);
   } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: { 
+          message: 'Validation Failed', 
+          details: error.issues.map((e: any) => ({ path: e.path, message: e.message }))
+        } 
+      });
+    }
     logger.error('Error creating task', {
       requestId: req.requestId,
       userId: (req as AuthRequest).user?.uid,
@@ -88,6 +99,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
+
 });
 
 // Update a task
@@ -104,7 +116,9 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: { message: 'Task not found' } });
     }
 
-    const { title, description, completed, priority, dueDate, category, position } = req.body as UpdateTaskDTO;
+    const validatedData = updateTaskSchema.parse(req.body);
+    const { title, description, completed, priority, dueDate, category, position } = validatedData;
+    
     const updatedTask: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
@@ -117,6 +131,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     if (category !== undefined) updatedTask.category = category;
     if (position !== undefined) updatedTask.position = position;
 
+
     await taskRepository.update(id as string, updatedTask);
     const finalTask = { ...existingTask, ...updatedTask };
 
@@ -126,6 +141,15 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     };
     res.json(response);
   } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: { 
+          message: 'Validation Failed', 
+          details: error.issues.map((e: any) => ({ path: e.path, message: e.message }))
+        } 
+      });
+    }
     logger.error('Error updating task', {
       requestId: req.requestId,
       taskId: req.params.id,
@@ -134,6 +158,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
+
 });
 
 // Delete a task
@@ -153,14 +178,25 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
     await taskRepository.delete(id as string);
     res.json({ success: true });
   } catch (error) {
-    logger.error('Error deleting task', {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: { 
+          message: 'Validation Failed', 
+          details: error.issues.map((e: any) => ({ path: e.path, message: e.message }))
+        } 
+      });
+    }
+
+
+    logger.error('Error in task route', {
       requestId: req.requestId,
-      taskId: req.params.id,
       userId: (req as AuthRequest).user?.uid,
       error: error instanceof Error ? error.message : String(error),
     });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
 });
+
 
 export default router;

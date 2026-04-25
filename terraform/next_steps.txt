@@ -2,20 +2,21 @@
 
 > **Current State**: Staging environment is fully provisioned and hardened. CI/CD is automated and keyless via WIF. All Terraform config is parameterized (no hardcoded project IDs). Deploys are gated on `terraform validate` and `fmt -check`.
 
-## 1. Production Rollout
-- [ ] Select the `prod` workspace: `terraform workspace select prod`.
-- [ ] Provision foundational resources for production using `environments/prod.tfvars`.
-- [ ] Update `deploy.yml` to support automated production deployments from the `main` branch (after staging approval).
+## 1. Production Rollout (Readiness Only)
+- [x] Select the `prod` workspace: `terraform workspace select prod`. (Completed)
+- [ ] Parameterize `deploy.yml` to support automated production deployments (WIF/Project ID variables).
+- [ ] Provision foundational resources for production using `environments/prod.tfvars`. (Deferred until after staging feedback).
+
 
 ## 2. Security Hardening
-- [x] Manual Task: Delete legacy static JSON keys for `github-deployer` in the GCP Console.
+- [ ] **High Priority**: Configure Cloud Armor or WAF for the public Cloud Run endpoint.
 - [ ] Enable "Enforcement" mode for App Check in the Firebase Console once traffic is verified.
-- [ ] Configure Cloud Armor or WAF for the public Cloud Run endpoint.
 
 ## 3. Observability & Monitoring
+- [ ] **High Priority**: Set up budget alerts for the GCP project.
 - [ ] Create a Cloud Monitoring dashboard for Cloud Run metrics.
 - [ ] Configure Error Reporting alerts for the server.
-- [ ] Set up budget alerts for the GCP project.
+
 
 ## 4. Mobile Tier Infrastructure
 - [ ] Provision Android/iOS specific identities and API keys in Terraform.

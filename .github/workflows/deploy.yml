@@ -88,12 +88,14 @@ jobs:
     - name: Terraform Validate
       run: terraform -chdir=terraform validate
 
-  deploy:
+  deploy-staging:
+    name: Deploy to Staging
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-server, test-web, test-e2e, validate-terraform]
     runs-on: ubuntu-latest
+    environment: staging
     env:
-      PROJECT_ID: 'task-manager-staging-494203'
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID_STAGING }}
       REGION: 'us-central1'
     steps:
     - uses: actions/checkout@v4
@@ -107,8 +109,8 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v2'
       with:
-        workload_identity_provider: 'projects/1279412370/locations/global/workloadIdentityPools/github-pool/providers/github-deploy-provider'
-        service_account: 'github-deployer@task-manager-staging-494203.iam.gserviceaccount.com'
+        workload_identity_provider: ${{ vars.WIF_PROVIDER_STAGING }}
+        service_account: ${{ vars.WIF_SERVICE_ACCOUNT_STAGING }}
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v2'
@@ -121,7 +123,10 @@ jobs:
         cd terraform
         terraform init
         terraform workspace select staging || terraform workspace new staging
-        terraform apply -var-file=environments/staging.tfvars -auto-approve
+        terraform apply -var-file=environments/staging.tfvars \
+          -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
+          -var="alert_email=${{ vars.ALERT_EMAIL }}" \
+          -auto-approve
 
     - name: 'Build and Deploy Server'
       run: |
@@ -131,7 +136,7 @@ jobs:
           --platform managed \
           --region $REGION \
           --service-account task-manager-server@$PROJECT_ID.iam.gserviceaccount.com \
-          --allow-unauthenticated
+          --ingress internal-and-cloud-load-balancing
 
     - name: 'Deploy Web to Firebase'
       run: |
@@ -139,12 +144,79 @@ jobs:
         npm ci
         npm run build
         cd ..
-        npx firebase-tools deploy --only hosting --project $PROJECT_ID --debug
+        npx firebase-tools deploy --only hosting --project $PROJECT_ID
       env:
-        NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-        NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-        NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ secrets.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY_STAGING }}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN_STAGING }}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.GCP_PROJECT_ID_STAGING }}
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET_STAGING }}
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID_STAGING }}
+        NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID_STAGING }}
+        NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY_STAGING }}
+
+  deploy-prod:
+    name: Deploy to Production
+    if: github.event_name == 'workflow_dispatch' # Manual trigger only for now
+    needs: [test-server, test-web, test-e2e, validate-terraform]
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID_PROD }}
+      REGION: 'us-central1'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: 'Set up Node.js'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: ${{ vars.WIF_PROVIDER_PROD }}
+        service_account: ${{ vars.WIF_SERVICE_ACCOUNT_PROD }}
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: 'Set up Terraform'
+      uses: hashicorp/setup-terraform@v3
+
+    - name: 'Terraform Plan & Apply'
+      run: |
+        cd terraform
+        terraform init
+        terraform workspace select prod || terraform workspace new prod
+        terraform apply -var-file=environments/prod.tfvars \
+          -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
+          -var="alert_email=${{ vars.ALERT_EMAIL }}" \
+          -auto-approve
+
+    - name: 'Build and Deploy Server'
+      run: |
+        gcloud builds submit . --config cloudbuild.yaml
+        gcloud run deploy task-manager-server \
+          --image gcr.io/$PROJECT_ID/server \
+          --platform managed \
+          --region $REGION \
+          --service-account task-manager-server@$PROJECT_ID.iam.gserviceaccount.com \
+          --ingress internal-and-cloud-load-balancing
+
+    - name: 'Deploy Web to Firebase'
+      run: |
+        cd web
+        npm ci
+        npm run build
+        cd ..
+        npx firebase-tools deploy --only hosting --project $PROJECT_ID
+      env:
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY_PROD }}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN_PROD }}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.GCP_PROJECT_ID_PROD }}
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET_PROD }}
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID_PROD }}
+        NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID_PROD }}
+        NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY_PROD }}
+

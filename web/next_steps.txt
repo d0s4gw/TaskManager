@@ -1,6 +1,6 @@
 # Next Steps - TaskManager Web
 
-> **Current State**: Web app is live in Staging with full Auth, CRUD, and drag-and-drop. Unit tests (Vitest, 21 tests) and E2E tests (Playwright, 13 tests) both pass. CI/CD pipeline gates deployments on unit tests, E2E tests, and Terraform validation. Structured logging is fully migrated.
+> **Current State**: Web app is live in Staging with full Auth, CRUD, and drag-and-drop. Unit tests (Vitest, 27 tests) and E2E tests (Playwright, 13 tests) both pass. CI/CD pipeline gates deployments on unit tests, E2E tests, and Terraform validation. Structured logging is fully migrated. Predictive autocomplete is implemented.
 
 ## 1. Environment Configuration
 - [x] Populate `web/.env.local` with real Firebase credentials.
@@ -36,10 +36,12 @@
 - [x] Add comprehensive E2E tests using Playwright.
 - [x] Implement "Agent Mode" trapdoor (`?agentLogin=true`) for automated testing.
 - [x] Create root-level unified dev stack (`npm run dev`) and setup script.
+- [x] Implement predictive task autocomplete (ghost text).
 
 ## 8. Future Features
-- [ ] Implement real-time task updates using Firestore listeners.
-- [ ] Add multi-browser E2E testing (Firefox, WebKit) in a nightly CI schedule.
-- [ ] Integrate Firebase Emulator Suite for higher-fidelity auth E2E tests.
+- [ ] **High Priority**: Implement real-time task updates using Firestore listeners.
 - [ ] Add visual regression testing with Playwright screenshot comparisons.
 - [ ] Add accessibility (a11y) audit tests using `@axe-core/playwright`.
+- [ ] Add multi-browser E2E testing (Firefox, WebKit) in a nightly CI schedule. (Deferred)
+- [ ] Integrate Firebase Emulator Suite for higher-fidelity auth E2E tests.
+

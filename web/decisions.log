@@ -68,3 +68,13 @@
 - **Rationale**: Unit tests verify components in isolation but cannot catch integration failures (auth → API → UI rendering). E2E tests close this gap.
 - **Implementation**: New `test-e2e` job in `deploy.yml` runs after unit tests pass, installs only Chromium for speed, and uploads the Playwright HTML report as a build artifact. Deploy `needs` updated to include `test-e2e`.
 
+## 8. Task Autocomplete (2026-04-25)
+- **Decision**: Implement inline "ghost text" autocomplete for task titles.
+- **Rationale**: Improves UX by providing immediate, non-intrusive suggestions based on common tasks or previous entries.
+- **Implementation**: Created `PredictiveInput` component that manages suggestions and renders ghost text inside the active input field. Integrated into `TaskForm`.
+
+## 9. Test Suite Expansion (2026-04-25)
+- **Decision**: Increase unit test coverage for new components.
+- **Rationale**: Ensure reliability of the predictive input and new UI interactions.
+- **Implementation**: Expanded Vitest suite from 21 to 27 tests.
+

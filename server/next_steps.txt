@@ -11,7 +11,7 @@
 ## 2. Business Logic Implementation
 - [x] **Task Repository**: Create a repository and routes for managing tasks (CRUD).
 - [x] **Dependency Graph**: Implement logic to track and visualize dependencies between tasks using the `DependencyData` shared type.
-- [x] **Input Validation**: Integrate `zod` or `joi` for strict schema validation at the API boundaries (using Shared Types as the base).
+- [ ] **Input Validation**: Integrate `zod` or `joi` for strict schema validation at the API boundaries (using Shared Types as the base). Currently using manual checks.
 
 ## 3. Infrastructure & Security
 - [x] **Secret Manager**: Update `src/index.ts` to pull sensitive configuration (like Firebase service account details if needed for local dev) from Secret Manager.
