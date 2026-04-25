@@ -8,7 +8,7 @@ export class TaskApi {
   constructor(private getToken: () => Promise<string | undefined>) {}
 
   subscribeToTasks(userId: string, callback: (tasks: Task[]) => void) {
-    if (typeof window !== 'undefined' && (window as any).__E2E_MOCK_USER__) {
+    if (typeof window !== 'undefined' && (window as unknown as { __E2E_MOCK_USER__: unknown }).__E2E_MOCK_USER__) {
       // E2E Mode: Fallback to REST API once to populate the dashboard
       this.getTasks().then(callback).catch(err => console.error("E2E fetch error:", err));
       return () => {};

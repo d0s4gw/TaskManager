@@ -227,6 +227,7 @@ type AuthFixtures = {
 export const test = base.extend<AuthFixtures>({
   taskStore: async ({}, use) => {
     const store = createTaskStore();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(store);
   },
 
@@ -240,6 +241,7 @@ export const test = base.extend<AuthFixtures>({
     // 3. Mock the Task API
     await mockTaskApi(page, taskStore);
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
   },
 });

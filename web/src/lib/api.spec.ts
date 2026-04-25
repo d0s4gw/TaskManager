@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { TaskApi } from './api';
 
 describe('TaskApi', () => {
@@ -14,7 +14,7 @@ describe('TaskApi', () => {
 
   it('should fetch tasks with correct headers', async () => {
     const mockTasks = [{ id: '1', title: 'Test Task' }];
-    (fetch as any).mockResolvedValue({
+    (fetch as Mock).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ success: true, data: mockTasks }),
     });
@@ -30,7 +30,7 @@ describe('TaskApi', () => {
   });
 
   it('should throw "Unauthorized" on 401', async () => {
-    (fetch as any).mockResolvedValue({
+    (fetch as Mock).mockResolvedValue({
       ok: false,
       status: 401,
     });
@@ -40,12 +40,12 @@ describe('TaskApi', () => {
 
   it('should create a task with correct body', async () => {
     const taskData = { title: 'New' };
-    (fetch as any).mockResolvedValue({
+    (fetch as Mock).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ success: true, data: { ...taskData, id: '1' } }),
     });
 
-    await api.createTask(taskData as any);
+    await api.createTask(taskData as Parameters<typeof api.createTask>[0]);
 
     expect(fetch).toHaveBeenCalledWith('/api/tasks', expect.objectContaining({
       method: 'POST',

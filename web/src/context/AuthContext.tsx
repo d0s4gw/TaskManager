@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 /** Declare the E2E test hook global. Set by Playwright's addInitScript. */
 declare global {
@@ -37,12 +37,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const loginWithMock = useCallback(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    
+    const mockUser = {
+      uid: 'mock-user-123',
+      email: 'agent@test.com',
+      displayName: 'Agent Gemini',
+      photoURL: 'https://lh3.googleusercontent.com/a/mock',
+      getIdToken: () => Promise.resolve('e2e-mock-firebase-id-token'),
+    } as unknown as User;
+    
+    logger.info('Manually triggering mock login');
+    setUser(mockUser);
+  }, []);
+
   useEffect(() => {
     // Agent/Dev shortcut: check query param or local storage
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       const params = new URLSearchParams(window.location.search);
       if (params.has('agentLogin') || localStorage.getItem('agentLogin') === 'true') {
         logger.info('Auto-triggering mock login for agent/dev mode');
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loginWithMock();
         setLoading(false);
         return;
@@ -74,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [loginWithMock]);
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
@@ -83,21 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       logger.error('Error signing in with Google', { error });
     }
-  };
-
-  const loginWithMock = () => {
-    if (process.env.NODE_ENV !== 'development') return;
-    
-    const mockUser = {
-      uid: 'mock-user-123',
-      email: 'agent@test.com',
-      displayName: 'Agent Gemini',
-      photoURL: 'https://lh3.googleusercontent.com/a/mock',
-      getIdToken: () => Promise.resolve('e2e-mock-firebase-id-token'),
-    } as unknown as User;
-    
-    logger.info('Manually triggering mock login');
-    setUser(mockUser);
   };
 
   const logout = async () => {

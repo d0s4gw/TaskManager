@@ -9,7 +9,7 @@ type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 class WebLogger {
   private service = 'task-manager-web';
 
-  private log(level: LogLevel, message: string, meta?: any) {
+  private log(level: LogLevel, message: string, meta?: Record<string, unknown>) {
     const timestamp = new Date().toISOString();
     const structuredLog = {
       timestamp,
@@ -37,10 +37,10 @@ class WebLogger {
     }
   }
 
-  info(message: string, meta?: any) { this.log('info', message, meta); }
-  warn(message: string, meta?: any) { this.log('warn', message, meta); }
-  error(message: string, meta?: any) { this.log('error', message, meta); }
-  debug(message: string, meta?: any) { this.log('debug', message, meta); }
+  info(message: string, meta?: Record<string, unknown>) { this.log('info', message, meta); }
+  warn(message: string, meta?: Record<string, unknown>) { this.log('warn', message, meta); }
+  error(message: string, meta?: Record<string, unknown>) { this.log('error', message, meta); }
+  debug(message: string, meta?: Record<string, unknown>) { this.log('debug', message, meta); }
 }
 
 export const logger = new WebLogger();

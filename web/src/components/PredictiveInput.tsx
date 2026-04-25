@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 interface PredictiveInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   suggestions: string[];
@@ -20,9 +20,12 @@ export function PredictiveInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const [prevValue, setPrevValue] = useState(value);
+
+  if (value !== prevValue) {
     setInputValue(String(value || ''));
-  }, [value]);
+    setPrevValue(value);
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;

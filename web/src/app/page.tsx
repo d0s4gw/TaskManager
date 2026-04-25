@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { TaskDetail } from "@/components/TaskDetail";
 import { Task, CreateTaskDTO, UpdateTaskDTO } from "../../../shared/task";
-import { APIResponse } from "../../../shared/api";
 import { LogOut, Loader2 } from "lucide-react";
 import { TaskApi } from "@/lib/api";
-import { reorderTasks } from "@/lib/reorder";
+import Image from "next/image";
 import {
   DndContext,
   closestCenter,
@@ -29,8 +28,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
+  const getApi = useCallback(() => new TaskApi(() => user?.getIdToken() || Promise.resolve(undefined)), [user]);
+
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTasksLoading(true);
       const unsubscribe = getApi().subscribeToTasks(user.uid, (data) => {
         setTasks(data);
@@ -40,17 +42,16 @@ export default function Home() {
     } else {
       setTasks([]);
     }
-  }, [user]);
-
-  const getApi = () => new TaskApi(() => user?.getIdToken() || Promise.resolve(undefined));
+  }, [user, getApi]);
 
   const handleAddTask = async (taskData: CreateTaskDTO) => {
     setError(null);
     try {
       const newTask = await getApi().createTask(taskData);
       setTasks(prev => [...prev, newTask]);
-    } catch (err: any) {
-      setError(err.message || "Failed to add task");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to add task";
+      setError(message);
     }
   };
 
@@ -65,7 +66,7 @@ export default function Home() {
 
     try {
       await getApi().updateTask(id, updates);
-    } catch (err: any) {
+    } catch {
       setTasks(originalTasks);
       setError("Failed to update task");
     }
@@ -92,7 +93,7 @@ export default function Home() {
         .map(task => api.updateTask(task.id, { position: task.position }));
 
       await Promise.all(updates);
-    } catch (err: any) {
+    } catch {
       setError("Failed to save new order");
       // Listener will eventually sync back if needed
     }
@@ -118,7 +119,7 @@ export default function Home() {
     
     try {
       await getApi().deleteTask(id);
-    } catch (err) {
+    } catch {
       setTasks(originalTasks);
       setError("Failed to delete task");
     }
@@ -148,7 +149,13 @@ export default function Home() {
           {user ? (
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-3">
-                <img src={user.photoURL || ""} alt={user.displayName || ""} className="w-8 h-8 rounded-full border border-zinc-200 dark:border-zinc-800" />
+                <Image 
+                  src={user.photoURL || "https://ui-avatars.com/api/?name=" + (user.displayName || "User")} 
+                  alt={user.displayName || "User profile"} 
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-full border border-zinc-200 dark:border-zinc-800" 
+                />
                 <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{user.displayName}</span>
               </div>
               <button 

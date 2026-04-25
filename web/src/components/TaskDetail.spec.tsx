@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { expect, it, describe, vi } from 'vitest';
 import { TaskDetail } from './TaskDetail';
 import { Task } from '../../../shared/task';
@@ -26,6 +26,7 @@ describe('TaskDetail', () => {
         onUpdate={vi.fn()} 
         onDelete={vi.fn()} 
         onToggle={vi.fn()} 
+        suggestions={[]}
       />
     );
     expect(container).toBeEmptyDOMElement();
@@ -40,6 +41,7 @@ describe('TaskDetail', () => {
         onUpdate={vi.fn()} 
         onDelete={vi.fn()} 
         onToggle={vi.fn()} 
+        suggestions={[]}
       />
     );
     // Should be in DOM but have translate-x-full class
@@ -56,6 +58,7 @@ describe('TaskDetail', () => {
         onUpdate={vi.fn()} 
         onDelete={vi.fn()} 
         onToggle={vi.fn()} 
+        suggestions={[]}
       />
     );
     expect(screen.getByDisplayValue('Test Task')).toBeInTheDocument();
@@ -73,6 +76,7 @@ describe('TaskDetail', () => {
         onUpdate={onUpdate} 
         onDelete={vi.fn()} 
         onToggle={vi.fn()} 
+        suggestions={[]}
       />
     );
 
@@ -93,6 +97,7 @@ describe('TaskDetail', () => {
         onUpdate={onUpdate} 
         onDelete={vi.fn()} 
         onToggle={vi.fn()} 
+        suggestions={[]}
       />
     );
 
@@ -112,6 +117,7 @@ describe('TaskDetail', () => {
         onUpdate={vi.fn()} 
         onDelete={vi.fn()} 
         onToggle={onToggle} 
+        suggestions={[]}
       />
     );
 
@@ -134,6 +140,7 @@ describe('TaskDetail', () => {
         onUpdate={vi.fn()} 
         onDelete={onDelete} 
         onToggle={vi.fn()} 
+        suggestions={[]}
       />
     );
 
