@@ -28,18 +28,28 @@ Push to the `main` branch to trigger:
 
 ## 🛠️ Local Development
 
-### 1. Configure Environment
-Create `.env` files in `/server` and `/web` based on the provided `.env.example` templates.
+### 1. Setup Environment
+Run the setup script to install all dependencies and create default configuration files:
+```bash
+./setup-local.sh
+```
 
-### 2. Run Locally
-- **Server**: `cd server && npm run dev`
-- **Web**: `cd web && npm run dev`
+### 2. Run Unified Stack
+Start both the Logic Tier (server) and Web Tier (frontend) simultaneously from the root directory:
+```bash
+npm run dev
+```
 
-### 3. Run Tests
-- **Server**: `cd server && npm test` (includes coverage report)
-- **Web (Unit)**: `cd web && npm test` (runs Vitest suite)
-- **Web (E2E)**: `cd web && npm run test:e2e` (runs Playwright against local dev server)
-- **Web (E2E UI)**: `cd web && npm run test:e2e:ui` (interactive Playwright test runner)
+### 3. Automated Testing (Agent Mode)
+For AI agents or rapid local testing, you can bypass the manual Google Login by appending the `agentLogin` query parameter:
+- **URL**: [http://localhost:3000/?agentLogin=true](http://localhost:3000/?agentLogin=true)
+- **Effect**: Automatically authenticates as "Agent Gemini" using a mocked token that the local server accepts.
+
+### 4. Run Tests
+- **Full Suite**: `npm test` from the root.
+- **Server**: `cd server && npm test`
+- **Web (Unit)**: `cd web && npm test`
+- **Web (E2E)**: `cd web && npm run test:e2e`
 
 ## 🔐 Security Standards
 - **Workload Identity Federation**: Zero static keys for deployment.

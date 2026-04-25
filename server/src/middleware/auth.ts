@@ -20,6 +20,7 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
 
   // E2E Test / Local Dev Bypass
   if (process.env.NODE_ENV === 'development' && token === 'e2e-mock-firebase-id-token') {
+    logger.info('Using E2E mock auth bypass', { requestId: req.requestId });
     req.user = {
       uid: 'mock-user-123',
       email: 'agent@test.com',

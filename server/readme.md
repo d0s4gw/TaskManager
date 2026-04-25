@@ -25,8 +25,15 @@ The Logic Tier is a Node.js + Express application built with TypeScript, serving
 ## Getting Started
 
 ### Development
+The server requires `NODE_ENV=development` to enable authentication bypasses for local testing. It is recommended to start the server via the root directory's unified dev command:
+
 ```bash
-npm ci
+# From the project root
+npm run dev
+```
+
+Alternatively, to run the server standalone:
+```bash
 npm run dev
 ```
 

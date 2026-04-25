@@ -34,9 +34,16 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 - **Request-ID**: Every request is assigned a unique ID via the `src/middleware/request-id.ts` middleware. The ID is read from the `X-Request-ID` header (set by upstream proxies) or generated as a UUID. Include `requestId: req.requestId` in all log metadata.
 - **Environment Config**: Do not hardcode project IDs or environment-specific values. Use `process.env.GOOGLE_CLOUD_PROJECT` (auto-set by Cloud Run, or from `.env` locally).
 
+## 🚢 Shipping & Deployment
+- **Shipping Guard**: Whenever the user asks "Are these changes ready to ship?", "Is this ready to deploy?", or similar, you **MUST** run all automated tests to verify stability:
+  1. `npm test` from the root (runs server and web unit tests).
+  2. `cd web && npm run test:e2e` (runs Playwright E2E tests).
+- **Gatekeeping**: Do not confirm readiness unless **all** tests pass. If any tests fail, report the failure and fix the issues before asking again.
+
 ## 🛠 Local Development
-- **Backend**: `npm run dev` in `server/`. Run tests with `npm test`.
-- **Frontend**: `npm run dev` in `web/`. Run unit tests with `npm test`. Run E2E tests with `npm run test:e2e` (headless) or `npm run test:e2e:ui` (interactive).
-- **Mobile**: `flutter run` in `mobile/`.
-- **Local API**: To test the web-to-server connection locally, ensure you have configured your `.env` files based on the `.env.example` templates in each tier.
-- **E2E Note**: E2E tests mock both Firebase Auth and the Task API at the network layer. No `.env.local` or running server is required — Playwright starts the Next.js dev server automatically.
+- **Unified Stack**: Run `npm run dev` in the **root** directory to start both `server` and `web` simultaneously using `concurrently`.
+- **Setup**: Run `./setup-local.sh` to install all dependencies across tiers and generate default `.env` files.
+- **Backend**: Listens on port `8080`.
+- **Frontend**: Listens on port `3000`. Next.js proxies `/api` to `localhost:8080`.
+- **Auth Trapdoor**: In `development` mode, you can use the `?agentLogin=true` query parameter to auto-authenticate as "Agent Gemini". This bypasses the Google Login popup and is optimized for AI agent testing.
+- **E2E Note**: E2E tests mock both Firebase Auth and the Task API at the network layer. No `.env.local` or running server is required for Playwright tests — it starts the Next.js dev server automatically.

@@ -41,6 +41,9 @@ The web surface for TaskManager is a high-performance, minimalist dashboard buil
    ```
 4. Open [http://localhost:3000](http://localhost:3000).
 
+> [!TIP]
+> **Agent Mode**: Append `?agentLogin=true` to the URL to automatically log in as a mock user for automated testing.
+
 ### Testing
 ```bash
 # Unit tests (Vitest)

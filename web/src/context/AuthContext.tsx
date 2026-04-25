@@ -38,6 +38,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Agent/Dev shortcut: check query param or local storage
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('agentLogin') || localStorage.getItem('agentLogin') === 'true') {
+        logger.info('Auto-triggering mock login for agent/dev mode');
+        loginWithMock();
+        setLoading(false);
+        return;
+      }
+    }
+
     // E2E test shortcut: if a mock user is injected, use it directly
     if (typeof window !== 'undefined' && window.__E2E_MOCK_USER__) {
       const mock = window.__E2E_MOCK_USER__;

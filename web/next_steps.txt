@@ -34,6 +34,8 @@
 ## 7. Completed Features
 - [x] Add drag-and-drop task reordering (`@dnd-kit`).
 - [x] Add comprehensive E2E tests using Playwright.
+- [x] Implement "Agent Mode" trapdoor (`?agentLogin=true`) for automated testing.
+- [x] Create root-level unified dev stack (`npm run dev`) and setup script.
 
 ## 8. Future Features
 - [ ] Implement real-time task updates using Firestore listeners.
