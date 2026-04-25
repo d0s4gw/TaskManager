@@ -12,7 +12,7 @@
     "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace web\"",
     "install-all": "npm install",
     "test": "npm test --workspaces",
-    "prepare": "husky"
+    "prepare": "command -v husky >/dev/null && husky || true"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
@@ -22,10 +22,10 @@
   },
   "lint-staged": {
     "server/src/**/*.ts": [
-      "npm run lint --prefix server"
+      "npm run lint --workspace server"
     ],
     "web/src/**/*.{ts,tsx}": [
-      "npm run lint --prefix web"
+      "npm run lint --workspace web"
     ],
     "terraform/**/*.tf": [
       "terraform -chdir=terraform fmt"

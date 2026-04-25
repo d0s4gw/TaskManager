@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "echo 'No tests for shared'"
+  },
   "dependencies": {
     "zod": "^4.3.6"
   }
