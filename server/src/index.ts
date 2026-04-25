@@ -1,3 +1,4 @@
+import 'module-alias/register';
 import { startTracing } from './tracing';
 // Start tracing before any other imports to ensure auto-instrumentation works
 startTracing();
