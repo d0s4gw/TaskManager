@@ -24,6 +24,12 @@ jobs:
     - name: Install Server Dependencies
       run: cd server && npm ci
 
+    - name: Run Server Lint
+      run: cd server && npm run lint
+
+    - name: Run Server Audit
+      run: cd server && npm audit --audit-level=high
+
     - name: Run Server Tests
       run: cd server && npm test
 
@@ -39,6 +45,12 @@ jobs:
 
     - name: Install Web Dependencies
       run: cd web && npm ci
+
+    - name: Run Web Lint
+      run: cd web && npm run lint
+
+    - name: Run Web Audit
+      run: cd web && npm audit --audit-level=high
 
     - name: Run Web Tests
       run: cd web && npm test

@@ -4,7 +4,7 @@ import { ITaskRepository, TaskRepository } from '../repositories/task.repository
 import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
 import { CreateTaskDTO, UpdateTaskDTO } from '../../../shared/task';
 import { APIResponse } from '../../../shared/api';
-import { createTaskSchema, updateTaskSchema } from '../validation/task.schema';
+import { createTaskSchema, updateTaskSchema } from '../../../shared/validation';
 import logger from '../logger';
 import { ZodError } from 'zod';
 

@@ -13,11 +13,11 @@ jest.mock('../tracing', () => ({
 }));
 
 // Use 'var' to avoid Temporal Dead Zone issues with hoisted jest.mock
-var mockGetByUserId = jest.fn();
-var mockCreateWithId = jest.fn();
-var mockGetByIdAndUserId = jest.fn();
-var mockUpdate = jest.fn();
-var mockDelete = jest.fn();
+const mockGetByUserId = jest.fn();
+const mockCreateWithId = jest.fn();
+const mockGetByIdAndUserId = jest.fn();
+const mockUpdate = jest.fn();
+const mockDelete = jest.fn();
 
 jest.mock('../repositories/task.repository', () => {
   return {

@@ -88,4 +88,21 @@ describe('TaskRepository', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('update', () => {
+    it('should update the document in firestore', async () => {
+      const updates = { title: 'Updated' };
+      await repository.update('1', updates);
+      expect(mockFirestore.doc).toHaveBeenCalledWith('1');
+      expect(mockDoc.update).toHaveBeenCalledWith(updates);
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete the document from firestore', async () => {
+      await repository.delete('1');
+      expect(mockFirestore.doc).toHaveBeenCalledWith('1');
+      expect(mockDoc.delete).toHaveBeenCalled();
+    });
+  });
 });

@@ -17,3 +17,6 @@ export const updateTaskSchema = z.object({
   category: z.string().max(50).optional(),
   position: z.number().optional(),
 });
+
+export type CreateTaskDTO = z.infer<typeof createTaskSchema>;
+export type UpdateTaskDTO = z.infer<typeof updateTaskSchema>;

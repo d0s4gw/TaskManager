@@ -5,9 +5,23 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix web\"",
     "install-all": "npm install && npm install --prefix server && npm install --prefix web",
-    "test": "npm test --prefix server && npm test --prefix web"
+    "test": "npm test --prefix server && npm test --prefix web",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
+  },
+  "lint-staged": {
+    "server/src/**/*.ts": [
+      "npm run lint --prefix server"
+    ],
+    "web/src/**/*.{ts,tsx}": [
+      "npm run lint --prefix web"
+    ],
+    "terraform/**/*.tf": [
+      "terraform -chdir=terraform fmt"
+    ]
   }
 }
