@@ -3,7 +3,8 @@
 This file contains "institutional knowledge" and critical patterns for the TaskManager project. Read this before starting any major feature development.
 
 ## 🧠 Core Philosophy
-- **Shared First**: All data structures and API response formats **must** be defined in the `/shared` directory as TypeScript interfaces first. Do not define models locally in `server/` or `web/` without a corresponding shared definition.
+- **Shared First**: All data structures and API response formats **must** be defined in the `/shared` directory.
+- **Unified Validation**: Use Zod schemas in `shared/validation.ts` for both frontend forms and backend request parsing. Never define duplicate validation logic.
 - **Security by Default**: Every new endpoint in `server/` must be wrapped with the Firebase Auth middleware. No unauthenticated data access is permitted except for `/health`.
 
 ## 🔐 Authentication & Security
@@ -15,7 +16,7 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 - **Environment**: Node.js 24 is the project standard. All CI/CD pipelines, Dockerfiles, and local development should target Node 24.
 - **Workflow**: We use GitHub Actions with **Workload Identity Federation (WIF)**. Use `npm ci` for all installations in CI/CD and Dockerfiles to ensure build stability.
 - **Project Number**: The GCP Project Number is `1279412370`.
-- **Promotion Path**: Code is pushed to `main`, which triggers the deploy workflow. Tests (server, web unit, web E2E, terraform validate) must **all pass** before the deploy job runs. Production promotion is currently manual via Terraform.
+- **Promotion Path**: Code is pushed to `main`, which triggers the deploy workflow. The "Hardened Gate" (Lint, Audit, Test, E2E) must **all pass** before the deploy job runs. Production promotion is currently manual via Terraform.
 - **Dockerfile**: Uses multi-stage build with `node:24-slim` and `npm ci` in both stages. Never use `npm install` in the Dockerfile.
 
 ## 📱 Mobile (Flutter) Patterns
@@ -38,7 +39,8 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 - **Shipping Guard**: Whenever the user asks "Are these changes ready to ship?", "Is this ready to deploy?", or similar, you **MUST** run all automated tests to verify stability:
   1. `npm test` from the root (runs server and web unit tests).
   2. `cd web && npm run test:e2e` (runs Playwright E2E tests).
-- **Gatekeeping**: Do not confirm readiness unless **all** tests pass. If any tests fail, report the failure and fix the issues before asking again.
+- **Gatekeeping**: Do not confirm readiness unless **all** tests, linting, and security audits pass.
+- **Local Guardrails**: The project uses Husky. If your commit is rejected, check the lint-staged output for style or formatting errors. Do not use `--no-verify`.
 
 ## 🛠 Local Development
 - **Unified Stack**: Run `npm run dev` in the **root** directory to start both `server` and `web` simultaneously using `concurrently`.

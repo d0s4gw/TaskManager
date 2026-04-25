@@ -1,23 +1,4 @@
-# Next Steps - Infrastructure Tier
-
-> **Current State**: Staging environment is fully provisioned and hardened. CI/CD is automated and keyless via WIF. All Terraform config is parameterized (no hardcoded project IDs). Deploys are gated on `terraform validate` and `fmt -check`.
-
-## 1. Production Rollout (Readiness Only)
-- [x] Select the `prod` workspace: `terraform workspace select prod`. (Completed)
-- [ ] Parameterize `deploy.yml` to support automated production deployments (WIF/Project ID variables).
-- [ ] Provision foundational resources for production using `environments/prod.tfvars`. (Deferred until after staging feedback).
-
-
-## 2. Security Hardening
-- [ ] **High Priority**: Configure Cloud Armor or WAF for the public Cloud Run endpoint.
-- [ ] Enable "Enforcement" mode for App Check in the Firebase Console once traffic is verified.
-
-## 3. Observability & Monitoring
-- [ ] **High Priority**: Set up budget alerts for the GCP project.
-- [ ] Create a Cloud Monitoring dashboard for Cloud Run metrics.
-- [ ] Configure Error Reporting alerts for the server.
-
-
-## 4. Mobile Tier Infrastructure
-- [ ] Provision Android/iOS specific identities and API keys in Terraform.
-- [ ] Configure Play Integrity / DeviceCheck for the mobile App Check provider.
+1. Implement remaining task features (labels, attachments)
+2. Add multi-user sharing
+3. Implement dark mode persistence
+4. Add push notifications

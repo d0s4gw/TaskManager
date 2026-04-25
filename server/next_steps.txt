@@ -1,31 +1,4 @@
-# TaskManager Logic Tier - Roadmap & Next Steps
-
-> **Current State**: Logic Tier is fully healthy in Staging. CI/CD is automated with unit test, E2E test, and Terraform validation gating. Structured logging with request-ID correlation is active, and the Dockerfile uses `node:24-slim` with `npm ci`.
-
-## 1. CI/CD Integration
-- [x] Configure GitHub Actions to build the Docker image and push it to Artifact Registry.
-- [x] Use the existing Workload Identity Federation (WIF) setup in `terraform/` for secure, keyless deployment to Cloud Run.
-- [x] Implement automated testing in the CI pipeline (`npm test`).
-- [x] Add E2E test gate (`test-e2e` job) to the deploy pipeline.
-
-## 2. Business Logic Implementation
-- [x] **Task Repository**: Create a repository and routes for managing tasks (CRUD).
-- [x] **Dependency Graph**: Implement logic to track and visualize dependencies between tasks using the `DependencyData` shared type.
-- [ ] **Input Validation**: Integrate `zod` or `joi` for strict schema validation at the API boundaries (using Shared Types as the base). Currently using manual checks.
-
-## 3. Infrastructure & Security
-- [x] **Secret Manager**: Update `src/index.ts` to pull sensitive configuration (like Firebase service account details if needed for local dev) from Secret Manager.
-- [x] **Firestore Rules**: Define and deploy `firestore.rules` to ensure only authenticated users can access their own data.
-- [x] **CORS**: Configure CORS middleware once the frontend URL is known.
-
-## 4. Frontend Initialization
-- [x] Initialize the Frontend tier (e.g., Vite + React).
-- [x] Configure the Frontend to consume the `/shared` types.
-- [x] Implement Firebase Auth on the frontend to generate the ID tokens required by the Logic Tier.
-
-## 5. Future Hardening
-- [ ] Implement advanced tracing for complex dependency calculations.
-- [x] Add request-id propagation to logs for easier cross-service debugging.
-- [ ] Implement rate limiting and DDoS protection at the Cloud Run level.
-- [ ] Add integration tests that spin up the Express server and hit real endpoints with Supertest + Firebase Emulator.
-- [ ] Add API contract tests validating `/shared` type conformance in CI.
+1. Implement remaining task features (labels, attachments)
+2. Add multi-user sharing
+3. Implement dark mode persistence
+4. Add push notifications

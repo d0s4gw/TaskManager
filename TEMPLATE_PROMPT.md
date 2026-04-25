@@ -24,12 +24,15 @@ Use this prompt to build a production-grade 3-tier application on GCP with zero 
 {
   "name": "server",
   "version": "1.0.0",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "rimraf dist && tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "test": "jest"
+    "dev": "NODE_ENV=development ts-node src/index.ts",
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "health": "curl http://localhost:8080/health"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
@@ -38,19 +41,30 @@ Use this prompt to build a production-grade 3-tier application on GCP with zero 
     "@opentelemetry/resources": "^1.30.0",
     "@opentelemetry/sdk-node": "^0.57.0",
     "@opentelemetry/semantic-conventions": "^1.30.0",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-winston": "^4.2.0",
     "firebase-admin": "^13.8.0",
-    "cors": "^2.8.5",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
-    "typescript": "^6.0.3",
+    "@types/supertest": "^7.2.0",
+    "eslint": "^9.39.4",
+    "globals": "^16.0.0",
+    "jest": "^30.3.0",
     "rimraf": "^6.1.3",
-    "ts-node": "^10.9.2"
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.0"
   }
 }
 ```
@@ -79,7 +93,34 @@ EXPOSE 8080
 CMD ["node", "dist/server/src/index.js"]
 ```
 
-### 3. Root: `cloudbuild.yaml`
+### 3. Server: `eslint.config.js` (Flat Config)
+```javascript
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import globals from 'globals';
+
+export default tseslint.config(
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
+    },
+    rules: {
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      "@typescript-eslint/no-require-imports": "warn",
+    }
+  }
+);
+```
+
+### 4. Root: `cloudbuild.yaml`
 ```yaml
 steps:
 - name: 'gcr.io/cloud-builders/docker'
@@ -102,7 +143,33 @@ export interface APIResponse<T> {
 }
 ```
 
-### 2. Server: Tracing (`server/src/tracing.ts`)
+### 2. Shared Validation (`shared/validation.ts`)
+```typescript
+import { z } from 'zod';
+
+export const createTaskSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(100),
+  description: z.string().max(500).optional(),
+  priority: z.enum(['none', 'low', 'medium', 'high']).optional(),
+  dueDate: z.string().datetime().optional().or(z.literal('')),
+  category: z.string().max(50).optional(),
+});
+
+export const updateTaskSchema = z.object({
+  title: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  completed: z.boolean().optional(),
+  priority: z.enum(['none', 'low', 'medium', 'high']).optional(),
+  dueDate: z.string().datetime().optional().or(z.literal('')),
+  category: z.string().max(50).optional(),
+  position: z.number().optional(),
+});
+
+export type CreateTaskDTO = z.infer<typeof createTaskSchema>;
+export type UpdateTaskDTO = z.infer<typeof updateTaskSchema>;
+```
+
+### 3. Server: Tracing (`server/src/tracing.ts`)
 ```typescript
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
@@ -326,6 +393,49 @@ resource "google_service_account_iam_member" "wif_token_creator" {
 }
 
 moved { from = google_iam_workload_identity_pool.github_pool[0]; to = google_iam_workload_identity_pool.github_pool }
+
+### 3. Terraform: `main.tf` (LB & Cloud Armor)
+```hcl
+resource "google_compute_security_policy" "cloud_armor" {
+  name = "task-manager-armor"
+  rule {
+    action   = "deny(403)"
+    priority = "1000"
+    match { expr { expression = "evaluatePreconfiguredExpr('sqli-v33-stable')" } }
+  }
+}
+
+resource "google_compute_region_network_endpoint_group" "server_neg" {
+  name                  = "server-neg"
+  region                = var.region
+  network_endpoint_type = "SERVERLESS"
+  cloud_run { service = google_cloud_run_v2_service.server.name }
+}
+
+resource "google_compute_backend_service" "server_backend" {
+  name                  = "server-backend"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  security_policy       = google_compute_security_policy.cloud_armor.id
+  backend { group = google_compute_region_network_endpoint_group.server_neg.id }
+}
+
+resource "google_compute_url_map" "lb_url_map" {
+  name            = "task-manager-url-map"
+  default_service = google_compute_backend_service.server_backend.id
+}
+
+resource "google_compute_global_forwarding_rule" "http_rule" {
+  name                  = "task-manager-forwarding-rule"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range            = "80"
+  target                = google_compute_target_http_proxy.http_proxy.id
+}
+
+resource "google_compute_target_http_proxy" "http_proxy" {
+  name    = "task-manager-proxy"
+  url_map = google_compute_url_map.lb_url_map.id
+}
+```
 ```
 
 ---
@@ -338,16 +448,46 @@ name: Deploy
 on: { push: { branches: [ main ] } }
 permissions: { contents: read, id-token: write }
 jobs:
-  deploy:
+  test-server:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - name: Install
+        run: cd server && npm ci
+      - name: Lint
+        run: cd server && npm run lint
+      - name: Audit
+        run: cd server && npm audit --audit-level=high
+      - name: Test
+        run: cd server && npm test
+
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - name: Install
+        run: cd web && npm ci
+      - name: Lint
+        run: cd web && npm run lint
+      - name: Audit
+        run: cd web && npm audit --audit-level=high
+      - name: Test
+        run: cd web && npm test
+
+  deploy:
+    needs: [test-server, test-web]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-      - name: Wait for IAM consistency
-        run: sleep 60 # IAM Propagation Warm-up
       - name: Terraform
         run: |
           cd terraform
@@ -357,10 +497,27 @@ jobs:
       - name: Deploy
         run: |
           gcloud builds submit . --config cloudbuild.yaml
-          # Retry loop for deployment to handle eventual consistency
-          for i in {1..3}; do
-            gcloud run deploy api --image gcr.io/${{ env.PROJECT_ID }}/server --service-account api-runtime-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com && break || sleep 30
-          done
+          gcloud run deploy api --image gcr.io/${{ env.PROJECT_ID }}/server --service-account api-runtime-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+```
+
+### 2. Root: `package.json` (Husky & Guardrails)
+```json
+{
+  "name": "root",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
+  },
+  "lint-staged": {
+    "server/src/**/*.ts": ["npm run lint --prefix server"],
+    "web/src/**/*.{ts,tsx}": ["npm run lint --prefix web"],
+    "terraform/**/*.tf": ["terraform -chdir=terraform fmt"]
+  }
+}
 ```
 
 ---

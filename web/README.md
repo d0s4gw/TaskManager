@@ -13,6 +13,7 @@ The web surface for TaskManager is a high-performance, minimalist dashboard buil
 
 ## 🏗 Architecture
 - **API Proxying**: All requests to `/api/**` are proxied via `firebase.json` to the backend running on Google Cloud Run. This avoids CORS issues and consolidates the API under the same origin.
+- **Unified Validation**: Utilizes the centralized `/shared/validation.ts` Zod schemas for both form validation and API parity.
 - **Shared Types**: Utilizes the centralized `/shared` directory for API response and data models, ensuring type safety between frontend and backend.
 
 ## 🛠 Features Implemented

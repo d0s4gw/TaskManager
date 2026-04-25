@@ -6,6 +6,7 @@ This directory contains the Terraform configuration for the TaskManager 3-tier s
 - **State Management**: GCS Backend (`gs://task-manager-tf-state-494203`) with Workspace support.
 - **Environment Strategy**: Single codebase using Terraform Workspaces (`staging`, `prod`).
 - **Identity**: Workload Identity Federation (WIF) for secure GitHub Actions deployment.
+- **Linting**: Formatting is enforced locally via Husky and in CI/CD via `terraform fmt -check`.
 
 ## Directory Structure
 - `main.tf`: Core resource definitions (APIs, Firestore, Secret Manager, IAM).

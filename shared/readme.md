@@ -5,7 +5,8 @@ This directory contains the 'source of truth' for TypeScript interfaces and sche
 ## Structure
 
 - `user.ts`: User profile and identity schemas.
-- `dependency.ts`: Schemas for task and system dependencies.
+- `task.ts`: Task data models and DTOs (inferred from validation schemas).
+- `validation.ts`: Shared Zod validation schemas for all CRUD operations.
 - `api.ts`: Standardized API request/response envelopes.
 
 ## Usage

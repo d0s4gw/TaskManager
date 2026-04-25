@@ -238,10 +238,9 @@ resource "google_compute_region_network_endpoint_group" "server_neg" {
   }
 }
 
-resource "google_compute_region_backend_service" "server_backend" {
+resource "google_compute_backend_service" "server_backend" {
   project               = var.project_id
   name                  = "server-backend"
-  region                = var.region
   protocol              = "HTTP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
   security_policy       = google_compute_security_policy.cloud_armor.id
@@ -251,29 +250,25 @@ resource "google_compute_region_backend_service" "server_backend" {
   }
 }
 
-resource "google_compute_region_url_map" "lb_url_map" {
+resource "google_compute_url_map" "lb_url_map" {
   project         = var.project_id
   name            = "task-manager-url-map"
-  region          = var.region
-  default_service = google_compute_region_backend_service.server_backend.id
+  default_service = google_compute_backend_service.server_backend.id
 }
 
-resource "google_compute_region_target_http_proxy" "http_proxy" {
+resource "google_compute_target_http_proxy" "http_proxy" {
   project = var.project_id
   name    = "task-manager-proxy"
-  region  = var.region
-  url_map = google_compute_region_url_map.lb_url_map.id
+  url_map = google_compute_url_map.lb_url_map.id
 }
 
-resource "google_compute_forwarding_rule" "http_rule" {
+resource "google_compute_global_forwarding_rule" "http_rule" {
   project               = var.project_id
   name                  = "task-manager-forwarding-rule"
-  region                = var.region
   ip_protocol           = "TCP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
   port_range            = "80"
-  target                = google_compute_region_target_http_proxy.http_proxy.id
-  network_tier          = "STANDARD"
+  target                = google_compute_target_http_proxy.http_proxy.id
 }
 
 # 9. Firestore Composite Indexes

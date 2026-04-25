@@ -78,3 +78,8 @@
 - **Rationale**: Ensure reliability of the predictive input and new UI interactions.
 - **Implementation**: Expanded Vitest suite from 21 to 27 tests.
 
+## 10. Repository Hardening (2026-04-25)
+
+### 10a. Shared Validation & Automated Guardrails
+- **Decision**: Moved Zod schemas to `shared/validation.ts`. Added ESLint to server. Enforced Lint/Audit in CI/CD. Added Husky/lint-staged local guardrails.
+- **Rationale**: Prevents architectural drift and catches errors early in the development lifecycle. Ensures junior devs and agents cannot push sub-standard or broken code.
