@@ -11,13 +11,18 @@ This directory contains the 'source of truth' for TypeScript interfaces and sche
 
 ## Usage
 
-These types are designed to be imported directly into other TypeScript projects within the monorepo.
+These types are designed to be imported directly into other TypeScript projects within the monorepo using **npm workspaces**.
 
-### Server-side (Logic Tier)
-In `server/tsconfig.json`, the shared directory is mapped to the `@shared` alias:
+### Logic Tier (Server)
+The server uses the `@shared` alias (configured in `tsconfig.json` and resolved via `module-alias` in production):
 ```typescript
-import { User } from '../../shared/user';
+import { User } from '@shared/user';
+import { APIResponse } from '@shared/api';
 ```
 
-### Client-side (Frontend)
-Future frontend implementations should reference these types to ensure API compatibility and strict typing of state management.
+### Web Tier (Frontend)
+The Next.js frontend also uses the `@shared` alias:
+```typescript
+import { Task } from '@shared/task';
+import { taskSchema } from '@shared/validation';
+```

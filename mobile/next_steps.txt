@@ -1,4 +1,0 @@
-1. Implement remaining task features (labels, attachments)
-2. Add multi-user sharing
-3. Implement dark mode persistence
-4. Add push notifications

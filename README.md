@@ -8,10 +8,15 @@
 - **/mobile**: Mobile Tier (Flutter).
 - **/shared**: Shared TypeScript interfaces and models.
 - **/terraform**: Infrastructure-as-Code (GCP).
-- **/docs**: [System Architecture and Infrastructure Specifications](./docs/architecture.md).
+- **/docs/adr**: [Architecture Decision Records](./docs/adr/): Why we built it this way.
+- **/ROADMAP.md**: [Project Roadmap](./ROADMAP.md): Where we are going.
+
+> [!TIP]
+> For tactical, tier-specific tasks, see the `TODO.md` files in each tier (server, web, terraform).
 
 ## 🏗️ Architecture Highlights
 - **Type Safety & Validation**: Unified domain models and Zod validation schemas shared between frontend and backend in the `/shared` package.
+- **npm Workspaces**: The repository is organized as a monorepo using **npm workspaces** for dependency management and local package resolution.
 - **Observability**: Structured JSON logging across all tiers for native Google Cloud Logging integration. Request-ID correlation enables cross-service debugging.
 - **Stateless Logic**: Scalable, containerized backend optimized for cold-start performance.
 
@@ -34,7 +39,7 @@ Run the setup script to install all dependencies and create default configuratio
 ```
 
 ### 2. Run Unified Stack
-Start both the Logic Tier (server) and Web Tier (frontend) simultaneously from the root directory:
+Start both the Logic Tier (server) and Web Tier (frontend) simultaneously using `concurrently`:
 ```bash
 npm run dev
 ```
@@ -51,10 +56,17 @@ For AI agents or rapid local testing, you can bypass the manual Google Login by 
 - **Effect**: Automatically authenticates as "Agent Gemini" using a mocked token that the local server accepts.
 
 ### 4. Run Tests
-- **Full Suite**: `npm test` from the root.
-- **Server**: `cd server && npm test`
-- **Web (Unit)**: `cd web && npm test`
-- **Web (E2E)**: `cd web && npm run test:e2e`
+- **Full Suite**: `npm test` from the root (runs all workspaces).
+- **Server**: `npm test --workspace server`
+- **Web (Unit)**: `npm test --workspace web`
+- **Web (E2E)**: `npm run test:e2e --workspace web`
+
+---
+
+## 🤖 Agent Interaction
+If you are an AI coding assistant, please refer to:
+- [AGENTS.md](./web/AGENTS.md): Specific rules and "trapdoors" for automated testing.
+- [TEMPLATE_PROMPT.md](./TEMPLATE_PROMPT.md): Blueprint for replicating this architecture.
 
 ## 🔐 Security Standards
 - **Workload Identity Federation**: Zero static keys for deployment.

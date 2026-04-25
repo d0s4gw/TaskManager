@@ -36,5 +36,5 @@ The mobile surface for TaskManager is a cross-platform application built with Fl
    ```
 
 ## 📄 Documentation
-- [Decisions Log](decisions.log): Architectural decisions and rationale.
-- [Next Steps](next_steps.txt): Detailed guide for the next phase of development.
+- **[Architecture Decision Records (ADR)](../docs/adr/)**: Why we built it this way.
+- **[TODO.md](./TODO.md)**: Detailed guide for the next phase of development.

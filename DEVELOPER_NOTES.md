@@ -1,10 +1,11 @@
 # Developer & AI Agent Notes
 
-This file contains "institutional knowledge" and critical patterns for the TaskManager project. Read this before starting any major feature development.
+This file contains critical patterns for the TaskManager project. For the historical context behind these patterns, see the [Architecture Decision Records (ADR)](./docs/adr/).
 
 ## 🧠 Core Philosophy
 - **Shared First**: All data structures and API response formats **must** be defined in the `/shared` directory.
 - **Unified Validation**: Use Zod schemas in `shared/validation.ts` for both frontend forms and backend request parsing. Never define duplicate validation logic.
+- **Predictive UX**: Use the `PredictiveInput` component (or its patterns) for task titles to provide inline "ghost text" suggestions.
 - **Security by Default**: Every new endpoint in `server/` must be wrapped with the Firebase Auth middleware. No unauthenticated data access is permitted except for `/health`.
 
 ## 🔐 Authentication & Security
@@ -14,10 +15,10 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 
 ## 🚀 Deployment & CI/CD
 - **Environment**: Node.js 24 is the project standard. All CI/CD pipelines, Dockerfiles, and local development should target Node 24.
-- **Workflow**: We use GitHub Actions with **Workload Identity Federation (WIF)**. Use `npm ci` for all installations in CI/CD and Dockerfiles to ensure build stability.
+- **Workflow**: We use GitHub Actions with **Workload Identity Federation (WIF)**. The project uses **npm workspaces** — use `npm ci --workspace <name>` or `npm ci` at the root for installations.
 - **Project Number**: The GCP Project Number is `1279412370`.
 - **Promotion Path**: Code is pushed to `main`, which triggers the deploy workflow. The "Hardened Gate" (Lint, Audit, Test, E2E) must **all pass** before the deploy job runs. Production promotion is currently manual via Terraform.
-- **Dockerfile**: Uses multi-stage build with `node:24-slim` and `npm ci` in both stages. Never use `npm install` in the Dockerfile.
+- **Dockerfile**: Uses multi-stage build with `node:24-slim` and `npm ci` with workspace flags. The build context is the project root to allow inclusion of the `shared/` package.
 
 ## 📱 Mobile (Flutter) Patterns
 - **Model Parity**: Dart models in `mobile/lib/models/` must manually track the `/shared` TypeScript interfaces. If you update a TS interface, you **must** update the corresponding Dart model.
@@ -31,8 +32,10 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 - **Page Object Model**: E2E selectors are encapsulated in Page Object classes under `e2e/pages/`. When adding new UI components, add `data-testid` attributes and update the corresponding Page Object.
 
 ## 🖥️ Server (Express) Patterns
-- **Structured Logging**: Use `winston` via `src/logger.ts` for all logging. Do not use `console.error` or `console.log` — every log entry must be structured JSON for Cloud Logging.
-- **Request-ID**: Every request is assigned a unique ID via the `src/middleware/request-id.ts` middleware. The ID is read from the `X-Request-ID` header (set by upstream proxies) or generated as a UUID. Include `requestId: req.requestId` in all log metadata.
+- **Module System**: The server uses **CommonJS** (`require`).
+- **Path Aliasing**: Use the `@shared` alias for all imports from the shared package. In production, this is resolved via `module-alias`; in development, via `tsconfig-paths`.
+- **Structured Logging**: Use `winston` via `src/logger.ts` for all logging. Every log entry must be structured JSON for Cloud Logging.
+- **Request-ID**: Every request is assigned a unique ID via the `src/middleware/request-id.ts` middleware. Include `requestId: req.requestId` in all log metadata.
 - **Environment Config**: Do not hardcode project IDs or environment-specific values. Use `process.env.GOOGLE_CLOUD_PROJECT` (auto-set by Cloud Run, or from `.env` locally).
 
 ## 🚢 Shipping & Deployment
@@ -43,8 +46,8 @@ This file contains "institutional knowledge" and critical patterns for the TaskM
 - **Local Guardrails**: The project uses Husky. If your commit is rejected, check the lint-staged output for style or formatting errors. Do not use `--no-verify`.
 
 ## 🛠 Local Development
-- **Unified Stack**: Run `npm run dev` in the **root** directory to start both `server` and `web` simultaneously using `concurrently`.
-- **Setup**: Run `./setup-local.sh` to install all dependencies across tiers and generate default `.env` files.
+- **Unified Stack**: Run `npm run dev` in the **root** directory to start both `server` and `web` simultaneously via workspaces.
+- **Setup**: Run `./setup-local.sh` to install all dependencies across workspaces and generate default `.env` files.
 - **Backend**: Listens on port `8080`.
 - **Frontend**: Listens on port `3000`. Next.js proxies `/api` to `localhost:8080`.
 - **Auth Trapdoor**: In `development` mode, you can use the `?agentLogin=true` query parameter to auto-authenticate as "Agent Gemini". This bypasses the Google Login popup and is optimized for AI agent testing.

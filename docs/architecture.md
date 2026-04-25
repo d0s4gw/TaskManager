@@ -19,8 +19,8 @@
 1. **Hardened Test Gate**: Server (Jest + ESLint), Web (Vitest + ESLint), E2E (Playwright), and Terraform (fmt + validate) run on every push to `main`. Deploy is blocked until all pass.
 2. **Security & Audit**: `npm audit` is performed to catch high-severity vulnerabilities.
 3. **Terraform**: Synchronizes infrastructure (APIs, IAM, Cloud Run service definitions).
-3. **Cloud Build**: Multi-stage build using `cloudbuild.yaml` to handle root build context and shared types.
-4. **Firebase Hosting**: Deploys the Web Tier (Next.js).
+4. **Cloud Build**: Multi-stage build using `cloudbuild.yaml` with the project root as context to support **npm workspaces**.
+5. **Firebase Hosting & Rules**: Deploys the Web Tier (Next.js) and Firestore security rules.
 
 ## Persistence Layer (Firestore)
 - **Mode**: Native Mode.

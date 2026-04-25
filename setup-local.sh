@@ -3,16 +3,9 @@ set -e
 
 echo "🚀 Setting up TaskManager for local development..."
 
-# 1. Install root dependencies (concurrently)
-echo "📦 Installing root dependencies..."
+# 1. Install all dependencies via workspaces
+echo "📦 Installing all dependencies (root, server, web, shared)..."
 npm install
-
-# 2. Install Tier dependencies
-echo "📦 Installing server dependencies..."
-npm install --prefix server
-
-echo "📦 Installing web dependencies..."
-npm install --prefix web
 
 # 3. Create dummy .env files if they don't exist
 if [ ! -f server/.env ]; then

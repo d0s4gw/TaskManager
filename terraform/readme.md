@@ -14,8 +14,7 @@ This directory contains the Terraform configuration for the TaskManager 3-tier s
 - `providers.tf`: Provider configuration.
 - `backend.tf`: GCS remote backend configuration.
 - `environments/`: Environment-specific variable files (`.tfvars`).
-- `decisions.log`: Audit log of architectural decisions.
-- `next_steps.txt`: Roadmap for application and CI/CD integration.
+- `TODO.md`: Roadmap for application and CI/CD integration.
 
 ## Usage
 
@@ -43,4 +42,4 @@ terraform apply -var-file=environments/prod.tfvars
 ## Security Note
 The `github-deployer` service account is scoped to specific roles required for Cloud Run, Artifact Registry, Firestore, and Firebase Hosting management. See `main.tf` for the full role list.
 
-For a detailed history of design decisions, see [decisions.log](./decisions.log).
+For a detailed history of design decisions, see [Architecture Decision Records (ADR)](../docs/adr/).

@@ -31,12 +31,12 @@ The web surface for TaskManager is a high-performance, minimalist dashboard buil
 - Chromium for Playwright (`npx playwright install chromium`)
 
 ### Development
-1. Install dependencies:
+1. Install dependencies from the **project root**:
    ```bash
    npm install
    ```
-2. Configure environment variables in `.env.local` (see `next_steps.txt`).
-3. Run the development server:
+2. Configure environment variables in `.env.local`.
+3. Run the development server (from root or web):
    ```bash
    npm run dev
    ```
@@ -63,5 +63,5 @@ npm run test:e2e:ui
 - **Tests**: `e2e/tests/` — `auth.spec.ts` (unauthenticated flows) and `task-crud.spec.ts` (full CRUD lifecycle).
 
 ## 📄 Documentation
-- [Decisions Log](decisions.log): Why we chose these technologies.
-- [Next Steps](next_steps.txt): Immediate tasks for the next development session.
+- **[Architecture Decision Records (ADR)](../docs/adr/)**: Why we built it this way.
+- **[TODO.md](./TODO.md)**: Immediate tasks for the next development session.

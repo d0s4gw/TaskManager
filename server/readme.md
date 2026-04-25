@@ -11,7 +11,8 @@ The Logic Tier is a Node.js + Express application built with TypeScript, serving
 - **Validation**: Shared Zod schemas (Unified Validation)
 - **Observability**: OpenTelemetry (Traces & Error Reporting), Winston (Structured JSON Logging)
 - **Quality Control**: ESLint (Flat Config), Jest (Unit & Integration Tests)
-- **Containerization**: Docker (optimized for Google Cloud Run, `node:24-slim`, `npm ci`)
+- **Containerization**: Docker (optimized for Google Cloud Run, `node:24-slim`, `npm ci --workspace`)
+- **Monorepo**: Integrated via **npm workspaces** with `@shared` path aliasing.
 
 ## Directory Structure
 
@@ -40,6 +41,7 @@ npm run dev
 ```
 
 ### Build & Production
+The server uses **CommonJS** for production stability.
 ```bash
 npm run build
 npm start
@@ -52,8 +54,8 @@ npm test
 
 ## Architectural Context
 
-- **[decisions.log](./decisions.log)**: Detailed history of architectural and technical choices.
-- **[next_steps.txt](./next_steps.txt)**: Roadmap for future features and infrastructure tasks.
+- **[Architecture Decision Records (ADR)](../docs/adr/)**: Detailed history of architectural and technical choices.
+- **[TODO.md](./TODO.md)**: Roadmap for future features and infrastructure tasks.
 
 ## Deployment
 
