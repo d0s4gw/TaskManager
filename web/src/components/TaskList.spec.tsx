@@ -21,6 +21,25 @@ describe('TaskList', () => {
     expect(screen.getByText('high')).toBeInTheDocument(); // Priority badge
   });
 
+  it('renders task descriptions when provided', () => {
+    const tasksWithDescription: Task[] = [
+      ...mockTasks,
+      { 
+        id: '3', 
+        title: 'Task with description', 
+        description: 'This is a test description',
+        completed: false, 
+        userId: 'u1', 
+        createdAt: new Date().toISOString(), 
+        updatedAt: new Date().toISOString(), 
+        priority: 'none', 
+        position: 2 
+      },
+    ];
+    render(<TaskList tasks={tasksWithDescription} onToggle={vi.fn()} onDelete={vi.fn()} onSelectTask={vi.fn()} />);
+    expect(screen.getByText('This is a test description')).toBeInTheDocument();
+  });
+
   it('calls onSelectTask when the row is clicked', () => {
     const onSelectTask = vi.fn();
     render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={vi.fn()} onSelectTask={onSelectTask} />);

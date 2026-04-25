@@ -73,6 +73,11 @@ function SortableItem({ task, onToggle, onDelete, onSelectTask, index }: Sortabl
         <h3 className={`font-medium truncate ${task.completed ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-white'}`}>
           {task.title}
         </h3>
+        {task.description && (
+          <p className={`text-sm mt-0.5 line-clamp-2 ${task.completed ? 'text-zinc-400/70' : 'text-zinc-500 dark:text-zinc-400'}`}>
+            {task.description}
+          </p>
+        )}
         {(task.priority !== 'none' || task.dueDate) && (
           <div className="flex gap-3 mt-1.5">
             {task.priority !== 'none' && (
