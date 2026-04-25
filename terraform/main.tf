@@ -139,11 +139,19 @@ resource "google_project_iam_member" "deployer_roles" {
     "roles/firebasehosting.admin",            # To deploy web tier
     "roles/firebase.developAdmin",            # For general firebase management
     "roles/monitoring.editor",                # To create and manage dashboards
+    "roles/compute.networkAdmin",             # To manage NEGs and Forwarding Rules
+    "roles/compute.securityAdmin",            # To manage Cloud Armor
     "roles/serviceusage.serviceUsageConsumer" # For API enablement checks
   ])
   project = var.project_id
   role    = each.key
   member  = "serviceAccount:github-deployer@${var.project_id}.iam.gserviceaccount.com"
+}
+
+# 6.5 IAM Propagation Wait
+resource "time_sleep" "iam_wait" {
+  depends_on      = [google_project_iam_member.deployer_roles]
+  create_duration = "60s"
 }
 
 # 7. Cloud Run Service
@@ -183,7 +191,10 @@ resource "google_cloud_run_v2_service" "server" {
     percent = 100
   }
 
-  depends_on = [google_project_service.services]
+  depends_on = [
+    google_project_service.services,
+    time_sleep.iam_wait
+  ]
 
   ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 }
@@ -193,6 +204,8 @@ resource "google_compute_security_policy" "cloud_armor" {
   project     = var.project_id
   name        = "task-manager-armor"
   description = "Cloud Armor policy for TaskManager"
+
+  depends_on = [time_sleep.iam_wait]
 
   rule {
     action   = "allow"
@@ -237,6 +250,8 @@ resource "google_compute_region_network_endpoint_group" "server_neg" {
   cloud_run {
     service = google_cloud_run_v2_service.server.name
   }
+
+  depends_on = [time_sleep.iam_wait]
 }
 
 resource "google_compute_backend_service" "server_backend" {
@@ -345,8 +360,11 @@ resource "google_billing_budget" "budget" {
 
 # 13. Monitoring Dashboard
 resource "google_monitoring_dashboard" "dashboard" {
-  project        = var.project_id
-  depends_on     = [google_project_service.services]
+  project = var.project_id
+  depends_on = [
+    google_project_service.services,
+    time_sleep.iam_wait
+  ]
   dashboard_json = <<EOF
 {
   "displayName": "TaskManager Health (${var.environment})",
