@@ -63,10 +63,15 @@ For AI agents or rapid local testing, you can bypass the manual Google Login by 
 
 ---
 
-## 🤖 Agent Interaction
-If you are an AI coding assistant, please refer to:
-- [AGENTS.md](./web/AGENTS.md): Specific rules and "trapdoors" for automated testing.
-- [TEMPLATE_PROMPT.md](./TEMPLATE_PROMPT.md): Blueprint for replicating this architecture.
+## 🤖 AI Interaction
+This repository is **AI-Native**. It includes a hierarchical instruction system to ensure architectural fidelity:
+- **`CLAUDE.md`**: Root orchestrator and "Shipping Guard."
+- **Tier-specific `CLAUDE.md`**: Local guides in `server/`, `web/`, `shared/`, `mobile/`, and `terraform/`.
+
+> [!TIP]
+> **Bootstrap Command**: If you are an AI assistant, simply say **"Load TaskManager"** to automatically ingest the full project context and safety protocols.
+
+For the definitive system blueprint, see [TEMPLATE_PROMPT.md](./TEMPLATE_PROMPT.md).
 
 ## 🔐 Security Standards
 - **Workload Identity Federation**: Zero static keys for deployment.

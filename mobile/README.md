@@ -29,7 +29,7 @@ The mobile surface for TaskManager is a cross-platform application built with Fl
    ```bash
    flutter pub get
    ```
-2. Place `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) in their respective directories (see `next_steps.txt`).
+2. Place `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) in their respective directories.
 3. Run the application:
    ```bash
    flutter run
@@ -38,3 +38,6 @@ The mobile surface for TaskManager is a cross-platform application built with Fl
 ## 📄 Documentation
 - **[Architecture Decision Records (ADR)](../docs/adr/)**: Why we built it this way.
 - **[TODO.md](./TODO.md)**: Detailed guide for the next phase of development.
+
+## 🤖 AI Guidance
+For tier-specific conventions, commands, and safety rules, AI agents should refer to the [CLAUDE.md](./CLAUDE.md) file in this directory.

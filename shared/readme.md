@@ -26,3 +26,6 @@ The Next.js frontend also uses the `@shared` alias:
 import { Task } from '@shared/task';
 import { taskSchema } from '@shared/validation';
 ```
+
+## 🤖 AI Guidance
+For tier-specific conventions, commands, and safety rules, AI agents should refer to the [CLAUDE.md](./CLAUDE.md) file in this directory.

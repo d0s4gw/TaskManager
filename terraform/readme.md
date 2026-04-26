@@ -43,3 +43,6 @@ terraform apply -var-file=environments/prod.tfvars
 The `github-deployer` service account is scoped to specific roles required for Cloud Run, Artifact Registry, Firestore, and Firebase Hosting management. See `main.tf` for the full role list.
 
 For a detailed history of design decisions, see [Architecture Decision Records (ADR)](../docs/adr/).
+
+## 🤖 AI Guidance
+For tier-specific conventions, commands, and safety rules, AI agents should refer to the [CLAUDE.md](./CLAUDE.md) file in this directory.

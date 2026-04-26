@@ -60,3 +60,6 @@ npm test
 ## Deployment
 
 The server is designed for stateless deployment on **Google Cloud Run**. The multi-stage `Dockerfile` handles compilation and production optimization. Use the provisioned Terraform infrastructure in the `terraform/` directory for deployment.
+
+## 🤖 AI Guidance
+For tier-specific conventions, commands, and safety rules, AI agents should refer to the [CLAUDE.md](./CLAUDE.md) file in this directory.

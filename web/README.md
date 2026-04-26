@@ -65,3 +65,6 @@ npm run test:e2e:ui
 ## 📄 Documentation
 - **[Architecture Decision Records (ADR)](../docs/adr/)**: Why we built it this way.
 - **[TODO.md](./TODO.md)**: Immediate tasks for the next development session.
+
+## 🤖 AI Guidance
+For tier-specific conventions, commands, and safety rules, AI agents should refer to the [CLAUDE.md](./CLAUDE.md) file in this directory.
