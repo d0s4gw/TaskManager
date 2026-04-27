@@ -118,7 +118,10 @@ resource "google_secret_manager_secret_iam_member" "server_secret_accessor" {
   member    = "serviceAccount:${google_service_account.server_sa.email}"
 }
 
-# 6. Service Account IAM (github-deployer) - Least Privilege
+# 6. Service Account IAM (github-deployer) - Shared Identity
+# WARNING: This single service account is currently used for both Infrastructure (Terraform) 
+# and Application (Cloud Run) deployments. This requires extensive privileges.
+# Ensure strict PR reviews for all workflows using this account.
 resource "google_project_iam_member" "deployer_roles" {
   for_each = toset([
     "roles/run.admin",
@@ -182,6 +185,11 @@ resource "google_cloud_run_v2_service" "server" {
       env {
         name  = "GOOGLE_CLOUD_PROJECT"
         value = var.project_id
+      }
+
+      env {
+        name  = "NODE_ENV"
+        value = "production"
       }
     }
   }
@@ -312,12 +320,7 @@ resource "google_service_account_iam_member" "wif_user" {
   member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${var.github_repo}"
 }
 
-# 10. WIF Token Creator (Zero-403 Protocol)
-resource "google_service_account_iam_member" "wif_token_creator" {
-  service_account_id = google_service_account.server_sa.name
-  role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${var.github_repo}"
-}
+
 
 # 11. Allow Unauthenticated Access
 resource "google_cloud_run_v2_service_iam_member" "public_access" {
