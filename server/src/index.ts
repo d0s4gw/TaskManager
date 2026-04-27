@@ -35,9 +35,20 @@ if (!admin.apps.length) {
 
 import taskRoutes from './routes/tasks';
 import cors from 'cors';
+import { rateLimit } from 'express-rate-limit';
 
 const app = express();
 const port = process.env.PORT || 8080;
+
+// Global Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 1000, // Limit each IP to 1000 requests per windowMs
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { success: false, error: { message: 'Too many requests, please try again later.' } }
+});
+app.use(limiter);
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',

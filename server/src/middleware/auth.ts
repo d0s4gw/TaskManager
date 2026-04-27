@@ -40,6 +40,29 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
     return next();
   }
 
+  if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test') {
+    const appCheckToken = req.headers['x-firebase-appcheck'];
+    if (!appCheckToken || typeof appCheckToken !== 'string') {
+      logger.warn('Missing App Check token', { requestId: req.requestId });
+      return res.status(401).json({
+        success: false,
+        error: { code: 'unauthorized', message: 'Missing App Check token' }
+      });
+    }
+    try {
+      await admin.appCheck().verifyToken(appCheckToken);
+    } catch (error) {
+      logger.warn('App Check token verification failed', {
+        requestId: req.requestId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return res.status(401).json({
+        success: false,
+        error: { code: 'unauthorized', message: 'Invalid App Check token' }
+      });
+    }
+  }
+
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
     req.user = decodedToken;

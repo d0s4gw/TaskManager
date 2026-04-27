@@ -44,6 +44,10 @@ resource "google_secret_manager_secret" "starter" {
 resource "google_secret_manager_secret_version" "starter_v1" {
   secret      = google_secret_manager_secret.starter.id
   secret_data = "initial-secret-value"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
 }
 
 # 4. Workload Identity Federation
