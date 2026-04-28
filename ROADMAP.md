@@ -13,7 +13,7 @@ This document outlines the high-level milestones and future direction of the Tas
 - [/] **Predictive Input**: Implementation of inline ghost text for task creation.
 - [x] **Documentation Audit**: Migration to Hub & Spoke model for ADRs and Roadmaps.
 - [ ] **Labels & Attachments**: Adding metadata and file support to tasks.
-- [ ] **Multi-user Support**: Implementing RBAC and sharing invitations.
+- [x] **Multi-user Support**: Implementing RBAC and sharing invitations.
 
 ## 📱 Phase 3: Mobile & Offline (Upcoming)
 - [ ] **Mobile Parity**: Automate Dart model generation and bring Flutter app to feature parity with Web.
@@ -22,5 +22,5 @@ This document outlines the high-level milestones and future direction of the Tas
 
 ## 🏢 Phase 4: Production Readiness (Upcoming)
 - [ ] **Production Provisioning**: Provisioning the `prod` workspace in Terraform.
-- [ ] **Security Hardening**: Cloud Armor policy refinement and WAF rules.
+- [ ] **Security Hardening**: Global rate limiting refinement and App Check enforcement audits.
 - [ ] **Multi-Region Failover**: Enabling global redundancy for the Logic Tier.

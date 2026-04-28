@@ -14,5 +14,6 @@
 
 ## ⚠️ Safety Rules
 - **No Destroy**: Never run `terraform destroy` without explicit user confirmation.
+- **Ingress**: Ensure `ingress = "INGRESS_TRAFFIC_ALL"` in `google_cloud_run_v2_service` now that the LB is removed.
 - **Lint First**: You MUST run `terraform fmt` before finishing any infrastructure task.
 - **Secret Access**: Use `google_secret_manager_secret_version` for sensitive data. Do not hardcode values in `.tfvars`.

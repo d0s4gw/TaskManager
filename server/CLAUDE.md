@@ -14,5 +14,7 @@
 
 ## 🔐 Security & Observability
 - **Auth**: Protect all routes (except `/health`) with `verifyToken` middleware.
+- **App Check**: Mandatory verification in `verifyToken` for production.
+- **Rate Limit**: 1000 req / 15 min per IP.
 - **Logging**: Use `logger.info({ requestId: req.requestId, ... })`.
 - **ID Generation**: Use `crypto.randomUUID()` for new entity IDs.

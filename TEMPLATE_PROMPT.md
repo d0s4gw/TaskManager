@@ -1,4 +1,4 @@
-# TaskManager "BULLETPROOF SYSTEM BLUEPRINT" (v5.0)
+# TaskManager "BULLETPROOF SYSTEM BLUEPRINT" (v5.1)
 
 This document is the definitive source of truth for replicating the TaskManager architecture. It contains the **full source code** for every structural and infrastructure component of the system. 
 
@@ -219,6 +219,15 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
   const token = authHeader.split(' ')[1];
+
+  // App Check Verification (Production)
+  if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test') {
+    const appCheckToken = req.headers['x-firebase-appcheck'] as string;
+    if (!appCheckToken) return res.status(401).json({ success: false, error: { message: 'Missing App Check token' } });
+    try { await admin.appCheck().verifyToken(appCheckToken); }
+    catch (e) { return res.status(401).json({ success: false, error: { message: 'Invalid App Check token' } }); }
+  }
+
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
     req.user = decodedToken;
@@ -247,6 +256,10 @@ export abstract class BaseRepository<T extends { id: string }> {
     await this.collection.doc(id).update(data as admin.firestore.UpdateData<T>);
   }
   async delete(id: string): Promise<void> { await this.collection.doc(id).delete(); }
+  async list(): Promise<T[]> {
+    const snapshot = await this.collection.get();
+    return snapshot.docs.map(doc => doc.data() as T);
+  }
 }
 ```
 
@@ -258,14 +271,16 @@ startTracing();
 import express from 'express';
 import * as admin from 'firebase-admin';
 import expressWinston from 'express-winston';
+import { rateLimit } from 'express-rate-limit';
 import logger from './logger';
 import { requestId } from './middleware/request-id';
 
 if (!admin.apps.length) { admin.initializeApp({ projectId: process.env.GOOGLE_CLOUD_PROJECT }); }
 
 const app = express();
-app.use(require('cors')()); // Standard CORS for Zero-403 preflight resilience
+app.use(require('cors')({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
 app.use(express.json());
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 1000 }));
 app.use(requestId);
 app.use(expressWinston.logger({
   winstonInstance: logger,
@@ -374,66 +389,51 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   oidc { issuer_uri = "https://token.actions.githubusercontent.com" }
 }
 
-resource "google_service_account" "runtime_sa" {
+resource "google_service_account" "server_sa" {
   project = var.project_id
-  account_id = "api-runtime-sa"
+  account_id = "task-manager-server"
 }
 
-resource "google_project_iam_member" "runtime_roles" {
-  for_each = toset(["roles/datastore.user", "roles/cloudtrace.agent", "roles/secretmanager.secretAccessor", "roles/serviceusage.serviceUsageConsumer"])
+resource "google_project_iam_member" "server_roles" {
+  for_each = toset(["roles/datastore.user", "roles/cloudtrace.agent", "roles/secretmanager.secretAccessor"])
   project = var.project_id
   role = each.key
-  member = "serviceAccount:${google_service_account.runtime_sa.email}"
+  member = "serviceAccount:${google_service_account.server_sa.email}"
 }
 
-resource "google_service_account_iam_member" "wif_token_creator" {
-  service_account_id = google_service_account.runtime_sa.name
-  role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/${var.github_repo}"
+resource "google_service_account_iam_member" "wif_user" {
+  service_account_id = "projects/${var.project_id}/serviceAccounts/github-deployer@${var.project_id}.iam.gserviceaccount.com"
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${var.github_repo}"
 }
 
 moved { from = google_iam_workload_identity_pool.github_pool[0]; to = google_iam_workload_identity_pool.github_pool }
+```
 
-### 3. Terraform: `main.tf` (LB & Cloud Armor)
+### 3. Terraform: `main.tf` (Cloud Run & Direct Access)
 ```hcl
-resource "google_compute_security_policy" "cloud_armor" {
-  name = "task-manager-armor"
-  rule {
-    action   = "deny(403)"
-    priority = "1000"
-    match { expr { expression = "evaluatePreconfiguredExpr('sqli-v33-stable')" } }
+resource "google_cloud_run_v2_service" "server" {
+  name     = "task-manager-server"
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    service_account = google_service_account.server_sa.email
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      env { name = "NODE_ENV", value = "production" }
+    }
   }
 }
 
-resource "google_compute_region_network_endpoint_group" "server_neg" {
-  name                  = "server-neg"
-  region                = var.region
-  network_endpoint_type = "SERVERLESS"
-  cloud_run { service = google_cloud_run_v2_service.server.name }
+resource "google_cloud_run_v2_service_iam_member" "public_access" {
+  name   = google_cloud_run_v2_service.server.name
+  role   = "roles/run.invoker"
+  member = "allUsers"
 }
 
-resource "google_compute_backend_service" "server_backend" {
-  name                  = "server-backend"
-  load_balancing_scheme = "EXTERNAL_MANAGED"
-  security_policy       = google_compute_security_policy.cloud_armor.id
-  backend { group = google_compute_region_network_endpoint_group.server_neg.id }
-}
-
-resource "google_compute_url_map" "lb_url_map" {
-  name            = "task-manager-url-map"
-  default_service = google_compute_backend_service.server_backend.id
-}
-
-resource "google_compute_global_forwarding_rule" "http_rule" {
-  name                  = "task-manager-forwarding-rule"
-  load_balancing_scheme = "EXTERNAL_MANAGED"
-  port_range            = "80"
-  target                = google_compute_target_http_proxy.http_proxy.id
-}
-
-resource "google_compute_target_http_proxy" "http_proxy" {
-  name    = "task-manager-proxy"
-  url_map = google_compute_url_map.lb_url_map.id
+output "server_url" {
+  value = google_cloud_run_v2_service.server.uri
 }
 ```
 ```
@@ -497,7 +497,7 @@ jobs:
       - name: Deploy
         run: |
           gcloud builds submit . --config cloudbuild.yaml
-          gcloud run deploy api --image gcr.io/${{ env.PROJECT_ID }}/server --service-account api-runtime-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          gcloud run deploy task-manager-server --image gcr.io/${{ env.PROJECT_ID }}/server --service-account task-manager-server@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 ```
 
 ### 2. Root: `package.json` (Husky & Guardrails)

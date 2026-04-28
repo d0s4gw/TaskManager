@@ -7,6 +7,7 @@ This file contains critical patterns for the TaskManager project. For the histor
 - **Unified Validation**: Use Zod schemas in `shared/validation.ts` for both frontend forms and backend request parsing. Never define duplicate validation logic.
 - **Predictive UX**: Use the `PredictiveInput` component (or its patterns) for task titles to provide inline "ghost text" suggestions.
 - **Security by Default**: Every new endpoint in `server/` must be wrapped with the Firebase Auth middleware. No unauthenticated data access is permitted except for `/health`.
+- **Global Rate Limiting**: The server enforces a global rate limit of 1000 requests per 15 minutes per IP. This is configured in `server/src/index.ts`.
 
 ## 🔐 Authentication & Security
 - **JWT Handling**: The backend validates tokens using `firebase-admin`. Clients must send the `Authorization: Bearer <ID_TOKEN>` header.
@@ -37,6 +38,11 @@ This file contains critical patterns for the TaskManager project. For the histor
 - **Structured Logging**: Use `winston` via `src/logger.ts` for all logging. Every log entry must be structured JSON for Cloud Logging.
 - **Request-ID**: Every request is assigned a unique ID via the `src/middleware/request-id.ts` middleware. Include `requestId: req.requestId` in all log metadata.
 - **Environment Config**: Do not hardcode project IDs or environment-specific values. Use `process.env.GOOGLE_CLOUD_PROJECT` (auto-set by Cloud Run, or from `.env` locally).
+
+## 🏢 Workspace & Membership Logic
+- **Personal Workspace**: Every user is automatically granted access to a "Personal Workspace" on their first login. This is handled by the `WorkspaceRepository` and `verifyToken` middleware.
+- **Invitations**: Shared workspace access is managed via invitations. The invitation flow uses query parameters (e.g., `/invite?token=xyz`) for flexibility across web and mobile surfaces.
+- **Ownership**: The `isOwner` check is required for destructive workspace actions. Always verify ownership in the repository layer before proceeding with deletion.
 
 ## 🚢 Shipping & Deployment
 - **Shipping Guard**: Whenever the user asks "Are these changes ready to ship?", "Is this ready to deploy?", or similar, you **MUST** run all automated tests to verify stability:

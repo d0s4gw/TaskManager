@@ -15,8 +15,7 @@
 > For tactical, tier-specific tasks, see the `TODO.md` files in each tier (server, web, terraform).
 
 ## 🏗️ Architecture Highlights
-- **Type Safety & Validation**: Unified domain models and Zod validation schemas shared between frontend and backend in the `/shared` package.
-- **npm Workspaces**: The repository is organized as a monorepo using **npm workspaces** for dependency management and local package resolution.
+- **Workspace Management**: Multi-user support via shared workspaces and personal workspace auto-provisioning.
 - **Observability**: Structured JSON logging across all tiers for native Google Cloud Logging integration. Request-ID correlation enables cross-service debugging.
 - **Stateless Logic**: Scalable, containerized backend optimized for cold-start performance.
 
@@ -76,5 +75,6 @@ For the definitive system blueprint, see [TEMPLATE_PROMPT.md](./TEMPLATE_PROMPT.
 ## 🔐 Security Standards
 - **Workload Identity Federation**: Zero static keys for deployment.
 - **Least Privilege**: Service-specific IAM identities.
-- **Firebase App Check**: Enforced for Web and Mobile surfaces.
+- **Firebase App Check**: Enforced for all API requests.
+- **Global Rate Limiting**: Protection against automated abuse and DDoS.
 - **Secret Manager**: Secure handling of API keys and database credentials.

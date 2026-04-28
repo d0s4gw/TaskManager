@@ -16,6 +16,8 @@
 ## 🔐 Security & Testing
 - **Auth Trapdoor**: Use `?agentLogin=true` for local web testing.
 - **Auth Middleware**: Every new server route MUST use `verifyToken`.
+- **App Check**: All production requests MUST include a valid Firebase App Check token.
+- **Rate Limiting**: The server enforces a global limit of 1000 req / 15 min.
 - **Shipping Guard**: Before confirming readiness to deploy, you **MUST** run the "Test All" and "Test Web E2E" commands.
 
 ## 📚 References
