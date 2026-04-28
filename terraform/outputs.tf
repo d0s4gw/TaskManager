@@ -9,3 +9,7 @@ output "firestore_name" {
 output "wif_pool_id" {
   value = google_iam_workload_identity_pool.github_pool.id
 }
+
+output "server_url" {
+  value = google_cloud_run_v2_service.server.uri
+}

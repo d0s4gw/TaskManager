@@ -208,96 +208,9 @@ resource "google_cloud_run_v2_service" "server" {
     time_sleep.iam_wait
   ]
 
-  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  ingress = "INGRESS_TRAFFIC_ALL"
 }
 
-# 8. Load Balancer & Cloud Armor
-resource "google_compute_security_policy" "cloud_armor" {
-  project     = var.project_id
-  name        = "task-manager-armor"
-  description = "Cloud Armor policy for TaskManager"
-
-  depends_on = [time_sleep.iam_wait]
-
-  rule {
-    action   = "allow"
-    priority = "2147483647"
-    match {
-      versioned_expr = "SRC_IPS_V1"
-      config {
-        src_ip_ranges = ["*"]
-      }
-    }
-    description = "Default allow rule"
-  }
-
-  rule {
-    action   = "deny(403)"
-    priority = "1000"
-    match {
-      expr {
-        expression = "evaluatePreconfiguredExpr('sqli-v33-stable')"
-      }
-    }
-    description = "SQL Injection protection"
-  }
-
-  rule {
-    action   = "deny(403)"
-    priority = "1001"
-    match {
-      expr {
-        expression = "evaluatePreconfiguredExpr('xss-v33-stable')"
-      }
-    }
-    description = "XSS protection"
-  }
-}
-
-resource "google_compute_region_network_endpoint_group" "server_neg" {
-  project               = var.project_id
-  name                  = "server-neg"
-  region                = var.region
-  network_endpoint_type = "SERVERLESS"
-  cloud_run {
-    service = google_cloud_run_v2_service.server.name
-  }
-
-  depends_on = [time_sleep.iam_wait]
-}
-
-resource "google_compute_backend_service" "server_backend" {
-  project               = var.project_id
-  name                  = "server-backend"
-  protocol              = "HTTP"
-  load_balancing_scheme = "EXTERNAL_MANAGED"
-  security_policy       = google_compute_security_policy.cloud_armor.id
-
-  backend {
-    group = google_compute_region_network_endpoint_group.server_neg.id
-  }
-}
-
-resource "google_compute_url_map" "lb_url_map" {
-  project         = var.project_id
-  name            = "task-manager-url-map"
-  default_service = google_compute_backend_service.server_backend.id
-}
-
-resource "google_compute_target_http_proxy" "http_proxy" {
-  project = var.project_id
-  name    = "task-manager-proxy"
-  url_map = google_compute_url_map.lb_url_map.id
-}
-
-resource "google_compute_global_forwarding_rule" "http_rule" {
-  project               = var.project_id
-  name                  = "task-manager-forwarding-rule"
-  ip_protocol           = "TCP"
-  load_balancing_scheme = "EXTERNAL_MANAGED"
-  port_range            = "80"
-  target                = google_compute_target_http_proxy.http_proxy.id
-}
 
 # 9. Firestore Composite Indexes
 
