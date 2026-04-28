@@ -129,8 +129,8 @@ export default function Home() {
 
   const onSendInvite = async (email: string, role: WorkspaceRole) => {
     if (!workspaceToInvite) return;
-    await getApi().inviteMember(workspaceToInvite, email, role);
-    alert("Invite sent! (Mock)");
+    const result = await getApi().inviteMember(workspaceToInvite, email, role);
+    return result?.data?.token;
   };
 
   const handleUpdateTask = async (id: string, updates: UpdateTaskDTO) => {

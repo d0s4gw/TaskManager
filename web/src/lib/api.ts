@@ -145,8 +145,8 @@ export class TaskApi {
     return res.data;
   }
 
-  async inviteMember(workspaceId: string, email: string, role: string): Promise<void> {
-    await this.request<void>(`/workspaces/${workspaceId}/invite`, {
+  async inviteMember(workspaceId: string, email: string, role: string): Promise<APIResponse<{ invitationId: string, token: string }>> {
+    return this.request<{ invitationId: string, token: string }>(`/workspaces/${workspaceId}/invite`, {
       method: 'POST',
       body: JSON.stringify({ email, role }),
     });
