@@ -44,25 +44,26 @@ test.describe('Workspaces & Collaboration', () => {
     await workspaces.openInviteDialog(wsName);
     
     // Verify dialog content
-    await expect(page.getByRole('heading', { name: 'Invite Team Member' })).toBeVisible();
-    await expect(page.locator('div.bg-white').getByText(wsName)).toBeVisible();
+    const dialog = page.getByTestId('invite-member-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(wsName)).toBeVisible();
     
     // Fill email
-    await page.getByPlaceholder('colleague@example.com').fill('friend@test.com');
+    const emailInput = page.getByTestId('invite-email-input');
+    await emailInput.fill('friend@test.com');
     
     // Select role
-    await page.getByRole('button', { name: 'VIEWER' }).click();
+    await page.getByTestId('role-button-viewer').click();
     
-    // Mock the alert for invitation sent - use once to avoid double handle
-    page.once('dialog', async dialog => {
-      await dialog.accept();
-    });
+    // Send - wait for button to be enabled (in case of slow re-renders)
+    const sendButton = page.getByTestId('send-invitation-button');
+    await expect(sendButton).toBeEnabled();
+    await sendButton.click();
     
-    // Send
-    await page.getByRole('button', { name: 'Send Invitation' }).click();
-    
-    // Dialog should be closed
-    await expect(page.getByRole('heading', { name: 'Invite Team Member' })).not.toBeVisible();
+    // Dialog should be closed (or show success state)
+    // The current implementation stays open to show the token if a token is returned.
+    // However, the mock returns success but no token, which causes it to close.
+    await expect(page.getByTestId('invite-member-dialog')).not.toBeVisible();
   });
 
   test('accept invitation landing page', async ({ authenticatedPage: page }) => {

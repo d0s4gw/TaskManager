@@ -67,7 +67,10 @@ export function InviteMemberDialog({ isOpen, onClose, onInvite, workspaceName }:
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden animate-in zoom-in-95 duration-300">
+      <div 
+        data-testid="invite-member-dialog"
+        className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden animate-in zoom-in-95 duration-300"
+      >
         <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
@@ -149,6 +152,7 @@ export function InviteMemberDialog({ isOpen, onClose, onInvite, workspaceName }:
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="colleague@example.com"
+                  data-testid="invite-email-input"
                   className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all dark:text-white"
                 />
               </div>
@@ -164,6 +168,7 @@ export function InviteMemberDialog({ isOpen, onClose, onInvite, workspaceName }:
                       key={r}
                       type="button"
                       onClick={() => setRole(r)}
+                      data-testid={`role-button-${r}`}
                       className={`px-3 py-2 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all ${
                         role === r 
                           ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/20' 
@@ -186,6 +191,7 @@ export function InviteMemberDialog({ isOpen, onClose, onInvite, workspaceName }:
                 </button>
                 <button
                   type="submit"
+                  data-testid="send-invitation-button"
                   disabled={loading || !email}
                   className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white rounded-2xl font-semibold transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                 >
