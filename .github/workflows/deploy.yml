@@ -148,7 +148,7 @@ jobs:
           --platform managed \
           --region $REGION \
           --service-account task-manager-server@$PROJECT_ID.iam.gserviceaccount.com \
-          --ingress internal-and-cloud-load-balancing
+          --ingress all
 
     - name: 'Deploy Web to Firebase'
       run: |
@@ -214,7 +214,7 @@ jobs:
           --platform managed \
           --region $REGION \
           --service-account task-manager-server@$PROJECT_ID.iam.gserviceaccount.com \
-          --ingress internal-and-cloud-load-balancing
+          --ingress all
 
     - name: 'Deploy Web to Firebase'
       run: |

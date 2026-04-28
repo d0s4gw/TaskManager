@@ -4,8 +4,13 @@ service cloud.firestore {
     // Tasks collection: Only allow members of the task's workspace to read.
     match /tasks/{taskId} {
       allow read: if request.auth != null && (
-        request.auth.uid == resource.data.userId || 
-        get(/databases/$(database)/documents/workspaces/$(resource.data.workspaceId)).data.memberIds.hasAny([request.auth.uid])
+        resource.data.userId == request.auth.uid || 
+        resource.data.workspaceId == 'personal-' + request.auth.uid ||
+        (
+          !resource.data.workspaceId.matches('^personal-.*') &&
+          exists(/databases/$(database)/documents/workspaces/$(resource.data.workspaceId)) &&
+          get(/databases/$(database)/documents/workspaces/$(resource.data.workspaceId)).data.memberIds.hasAny([request.auth.uid])
+        )
       );
       allow write: if false; // Handled by Backend API
     }
