@@ -20,7 +20,7 @@ const DEFAULT_SUGGESTIONS = [
 ];
 
 interface TaskFormProps {
-  onAddTask: (task: CreateTaskDTO) => Promise<void>;
+  onAddTask: (task: Omit<CreateTaskDTO, 'workspaceId'>) => Promise<void>;
   suggestions?: string[];
 }
 

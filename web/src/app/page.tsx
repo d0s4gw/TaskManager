@@ -8,7 +8,7 @@ import { TaskDetail } from "@/components/TaskDetail";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { InviteMemberDialog } from "@/components/InviteMemberDialog";
 import { Task, CreateTaskDTO, UpdateTaskDTO } from "../../../shared/task";
-import { Workspace } from "../../../shared/workspace";
+import { Workspace, WorkspaceRole } from "../../../shared/workspace";
 import { LogOut, Loader2, Menu, X } from "lucide-react";
 import { TaskApi } from "@/lib/api";
 import Image from "next/image";
@@ -74,7 +74,7 @@ export default function Home() {
     }
   }, [user, getApi, currentWorkspaceId]);
 
-  const handleAddTask = async (taskData: CreateTaskDTO) => {
+  const handleAddTask = async (taskData: Omit<CreateTaskDTO, 'workspaceId'>) => {
     setError(null);
     try {
       // Inject workspaceId if missing (from schema)

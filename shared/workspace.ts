@@ -15,3 +15,7 @@ export interface Workspace {
   members: WorkspaceMember[];
   memberIds: string[];
 }
+
+export interface CreateWorkspaceDTO {
+  name: string;
+}

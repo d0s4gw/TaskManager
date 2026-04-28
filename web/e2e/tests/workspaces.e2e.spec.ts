@@ -67,10 +67,10 @@ test.describe('Workspaces & Collaboration', () => {
 
   test('accept invitation landing page', async ({ authenticatedPage: page }) => {
     // Navigate directly to an invite URL
-    await page.goto('/invites/mock-token?agentLogin=true');
+    await page.goto('/invites?token=mock-token&agentLogin=true');
     
-    // Ensure URL is stable and segment is parsed
-    await expect(page).toHaveURL(/\/invites\/mock-token/);
+    // Ensure URL is stable
+    await expect(page).toHaveURL(/token=mock-token/);
     await expect(page.getByText("You're Invited!")).toBeVisible();
     
     // Wait for mock user to be active

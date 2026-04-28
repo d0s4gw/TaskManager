@@ -143,6 +143,7 @@ function createTaskStore(initial: Task[] = [...SEED_TASKS]) {
         updatedAt: new Date().toISOString(),
         position: nextPosition++,
         ...data,
+        workspaceId: data.workspaceId || `personal-${MOCK_USER.uid}`,
       };
       tasks.push(task);
       return task;
