@@ -34,6 +34,9 @@ router.use(verifyToken);
 
 // Helper to check workspace membership
 async function checkWorkspaceMembership(workspaceId: string, userId: string): Promise<boolean> {
+  if (workspaceId === `personal-${userId}`) {
+    return true;
+  }
   const workspace = await workspaceRepository.getById(workspaceId);
   return !!workspace && workspace.memberIds.includes(userId);
 }
