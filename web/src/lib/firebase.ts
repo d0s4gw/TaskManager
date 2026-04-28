@@ -25,6 +25,8 @@ try {
 }
 
 // Initialize App Check
+let appCheck: ReturnType<typeof initializeAppCheck> | undefined;
+
 if (typeof window !== "undefined") {
   if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_ALL) {
     (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN: string | undefined }).FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN;
@@ -32,7 +34,7 @@ if (typeof window !== "undefined") {
 
   if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
     try {
-      initializeAppCheck(app, {
+      appCheck = initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
         isTokenAutoRefreshEnabled: true,
       });
@@ -60,5 +62,5 @@ if (typeof window !== "undefined") {
   db = {} as unknown as ReturnType<typeof getFirestore>;
 }
 
-export { auth, db };
+export { auth, db, appCheck };
 export default app;

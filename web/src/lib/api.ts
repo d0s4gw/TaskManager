@@ -1,7 +1,8 @@
 import { Task, CreateTaskDTO } from '../../../shared/task';
 import { Workspace, CreateWorkspaceDTO } from '../../../shared/workspace';
 import { APIResponse } from '../../../shared/api';
-import { db } from './firebase';
+import { db, appCheck } from './firebase';
+import { getToken } from 'firebase/app-check';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
 
@@ -72,6 +73,17 @@ export class TaskApi {
       'Authorization': `Bearer ${token}`,
       ...(options.headers as Record<string, string>),
     };
+
+    if (appCheck) {
+      try {
+        const appCheckTokenResponse = await getToken(appCheck, false);
+        if (appCheckTokenResponse.token) {
+          headers['X-Firebase-AppCheck'] = appCheckTokenResponse.token;
+        }
+      } catch (err) {
+        console.warn("Failed to get AppCheck token", err);
+      }
+    }
 
     const res = await fetch(`/api${path}`, {
       ...options,
