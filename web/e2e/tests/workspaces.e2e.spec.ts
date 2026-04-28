@@ -89,4 +89,34 @@ test.describe('Workspaces & Collaboration', () => {
     // Redirection to dashboard
     await expect(page).toHaveURL(/\/$/, { timeout: 10000 });
   });
+
+  test('delete a workspace', async ({ authenticatedPage: page }) => {
+    const workspaces = new WorkspacesPage(page);
+    await workspaces.goto();
+    
+    const wsName = 'Delete Me ' + Math.floor(Math.random() * 1000);
+    await workspaces.createWorkspace(wsName);
+    
+    // Verify it exists in switcher
+    await expect(page.getByRole('button', { name: wsName })).toBeVisible();
+    
+    // Hover over the workspace first to make the button visible
+    await page.getByRole('button', { name: wsName }).hover();
+    const deleteButton = page.getByRole('button', { name: 'Delete Workspace' });
+    await expect(deleteButton).toBeVisible();
+    
+    // Mock the confirmation dialog
+    page.once('dialog', async dialog => {
+      expect(dialog.message()).toContain(`Are you sure you want to delete "${wsName}"?`);
+      await dialog.accept();
+    });
+    
+    await deleteButton.click();
+    
+    // Verify it's GONE
+    await expect(page.getByRole('button', { name: wsName })).not.toBeVisible();
+    
+    // Verify we are back on Personal (header should say Personal Tasks)
+    await expect(page.getByRole('heading', { name: 'Personal Tasks' })).toBeVisible();
+  });
 });

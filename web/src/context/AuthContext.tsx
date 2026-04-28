@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (process.env.NODE_ENV !== 'development') return;
     
     const mockData = {
-      uid: 'mock-user-123',
+      uid: 'e2e-user-123',
       email: 'agent@test.com',
       displayName: 'Agent Gemini',
       photoURL: 'https://lh3.googleusercontent.com/a/mock',

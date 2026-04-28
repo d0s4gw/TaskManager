@@ -1,29 +1,34 @@
 "use client";
 
 import React from 'react';
-import { LayoutGrid, Plus, Users, User } from 'lucide-react';
+import { LayoutGrid, Plus, Users, User, Trash2 } from 'lucide-react';
 import { Workspace } from '../../../shared/workspace';
 
 interface WorkspaceSwitcherProps {
   workspaces: Workspace[];
   currentWorkspaceId: string | null;
+  currentUserId: string | undefined;
   onSelect: (id: string | null) => void;
   onCreate: () => void;
   onInvite: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export function WorkspaceSwitcher({ 
   workspaces, 
   currentWorkspaceId, 
+  currentUserId,
   onSelect, 
   onCreate,
-  onInvite
+  onInvite,
+  onDelete
 }: WorkspaceSwitcherProps) {
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex items-center justify-between px-2 mb-2">
         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">Workspaces</span>
         <button 
+          id="create-workspace-button"
           onClick={onCreate}
           className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md text-zinc-400 hover:text-indigo-600 transition-colors"
           title="Create Workspace"
@@ -48,7 +53,7 @@ export function WorkspaceSwitcher({
         <div key={workspace.id} className="group relative">
           <button
             onClick={() => onSelect(workspace.id)}
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all text-sm font-medium w-full text-left ${
+            className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all text-sm font-medium w-full text-left pr-16 ${
               currentWorkspaceId === workspace.id 
                 ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                 : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
@@ -58,16 +63,31 @@ export function WorkspaceSwitcher({
             <span className="truncate">{workspace.name}</span>
           </button>
           
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onInvite(workspace.id);
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-indigo-600 transition-all"
-            title="Invite Members"
-          >
-            <Users size={14} />
-          </button>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onInvite(workspace.id);
+              }}
+              className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-indigo-600 transition-all"
+              title="Invite Members"
+            >
+              <Users size={14} />
+            </button>
+            {workspace.ownerId === currentUserId && (
+              <button
+                id={`delete-workspace-${workspace.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(workspace.id);
+                }}
+                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-zinc-400 hover:text-red-600 transition-all"
+                title="Delete Workspace"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </div>

@@ -8,6 +8,11 @@ const mockDoc = {
   delete: jest.fn(),
 };
 
+const mockBatch = {
+  delete: jest.fn(),
+  commit: jest.fn(),
+};
+
 const mockFirestore = {
   collection: jest.fn().mockReturnThis(),
   where: jest.fn().mockReturnThis(),
@@ -15,6 +20,7 @@ const mockFirestore = {
   limit: jest.fn().mockReturnThis(),
   get: jest.fn(),
   doc: jest.fn(() => mockDoc),
+  batch: jest.fn(() => mockBatch),
 };
 
 jest.mock('firebase-admin', () => ({
@@ -103,6 +109,31 @@ describe('TaskRepository', () => {
       await repository.delete('1');
       expect(mockFirestore.doc).toHaveBeenCalledWith('1');
       expect(mockDoc.delete).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteByWorkspaceId', () => {
+    it('should delete all tasks in a workspace using batch', async () => {
+      const mockDocs = [
+        { ref: 'ref1' },
+        { ref: 'ref2' },
+      ];
+      mockFirestore.get.mockResolvedValue({
+        empty: false,
+        docs: mockDocs,
+      });
+
+      await repository.deleteByWorkspaceId('ws1');
+
+      expect(mockFirestore.where).toHaveBeenCalledWith('workspaceId', '==', 'ws1');
+      expect(mockBatch.delete).toHaveBeenCalledTimes(2);
+      expect(mockBatch.commit).toHaveBeenCalled();
+    });
+
+    it('should do nothing if no tasks found', async () => {
+      mockFirestore.get.mockResolvedValue({ empty: true });
+      await repository.deleteByWorkspaceId('ws1');
+      expect(mockBatch.commit).not.toHaveBeenCalled();
     });
   });
 });

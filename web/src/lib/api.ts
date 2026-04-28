@@ -159,4 +159,10 @@ export class TaskApi {
     if (!res.data) throw new Error('No data returned');
     return res.data;
   }
+
+  async deleteWorkspace(id: string): Promise<void> {
+    await this.request<void>(`/workspaces/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }

@@ -11,6 +11,7 @@ export interface ITaskRepository {
   getByIdAndWorkspaceId(id: string, workspaceId: string): Promise<Task | null>;
   update(id: string, data: Partial<Task>): Promise<void>;
   delete(id: string): Promise<void>;
+  deleteByWorkspaceId(workspaceId: string): Promise<void>;
 }
 
 export class TaskRepository extends BaseRepository<Task> implements ITaskRepository {
@@ -77,5 +78,16 @@ export class TaskRepository extends BaseRepository<Task> implements ITaskReposit
       return task;
     }
     return null;
+  }
+  
+  async deleteByWorkspaceId(workspaceId: string): Promise<void> {
+    const snapshot = await this.collection.where('workspaceId', '==', workspaceId).get();
+    if (snapshot.empty) return;
+
+    const batch = admin.firestore().batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
   }
 }

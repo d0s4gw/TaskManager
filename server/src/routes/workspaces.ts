@@ -2,6 +2,8 @@ import { Router, Response } from 'express';
 import { AuthRequest, verifyToken } from '../middleware/auth';
 import { IWorkspaceRepository, WorkspaceRepository } from '../repositories/workspace.repository';
 import { IInvitationRepository, InvitationRepository } from '../repositories/invitation.repository';
+import { ITaskRepository, TaskRepository } from '../repositories/task.repository';
+import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
 import { InProcessWorkspaceRepository } from '../repositories/in-process-workspace.repository';
 import { InProcessInvitationRepository } from '../repositories/in-process-invitation.repository';
 import { UserRepository } from '../repositories/user.repository';
@@ -18,10 +20,12 @@ const router = Router();
 const useMockRepo = process.env.NODE_ENV === 'development';
 let workspaceRepository: IWorkspaceRepository;
 let invitationRepository: IInvitationRepository;
+let taskRepository: ITaskRepository;
 
 if (useMockRepo) {
   workspaceRepository = new InProcessWorkspaceRepository();
   invitationRepository = new InProcessInvitationRepository();
+  taskRepository = new InProcessTaskRepository();
   
   // Seed a mock workspace for E2E
   workspaceRepository.create({
@@ -53,6 +57,7 @@ if (useMockRepo) {
 } else {
   workspaceRepository = new WorkspaceRepository();
   invitationRepository = new InvitationRepository();
+  taskRepository = new TaskRepository();
 }
 
 const userRepository = new UserRepository();
@@ -191,6 +196,44 @@ router.post('/accept/:token', async (req: AuthRequest, res: Response) => {
     res.json({ success: true, data: { workspaceId: invitation.workspaceId } });
   } catch (error) {
     logger.error('Error accepting invitation', { error: String(error) });
+    res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
+  }
+});
+
+// Delete a workspace
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.uid;
+    const workspaceId = req.params.id as string;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
+    }
+
+    // Block deletion of personal workspace
+    if (workspaceId === `personal-${userId}`) {
+      return res.status(400).json({ success: false, error: { message: 'Cannot delete personal workspace' } });
+    }
+
+    const workspace = await workspaceRepository.getById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ success: false, error: { message: 'Workspace not found' } });
+    }
+
+    // Only owner can delete
+    if (workspace.ownerId !== userId) {
+      return res.status(403).json({ success: false, error: { message: 'Only the owner can delete the workspace' } });
+    }
+
+    // 1. Delete all tasks in the workspace
+    await taskRepository.deleteByWorkspaceId(workspaceId);
+
+    // 2. Delete the workspace itself
+    await workspaceRepository.delete(workspaceId);
+
+    res.json({ success: true, message: 'Workspace and associated tasks deleted successfully' });
+  } catch (error) {
+    logger.error('Error deleting workspace', { error: String(error) });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
 });

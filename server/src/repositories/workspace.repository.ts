@@ -7,6 +7,7 @@ export interface IWorkspaceRepository {
   create(workspace: Workspace): Promise<void>;
   addMember(workspaceId: string, member: WorkspaceMember): Promise<void>;
   getById(id: string): Promise<Workspace | null>;
+  delete(id: string): Promise<void>;
 }
 
 export class WorkspaceRepository extends BaseRepository<Workspace> implements IWorkspaceRepository {

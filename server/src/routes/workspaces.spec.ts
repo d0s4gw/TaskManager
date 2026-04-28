@@ -16,10 +16,13 @@ const mockWsGetByUserId = jest.fn();
 const mockWsCreate = jest.fn();
 const mockWsGetById = jest.fn();
 const mockWsAddMember = jest.fn();
+const mockWsDelete = jest.fn();
 
 const mockInvGetByToken = jest.fn();
 const mockInvCreate = jest.fn();
 const mockInvUpdateStatus = jest.fn();
+
+const mockTaskDeleteByWorkspaceId = jest.fn();
 
 jest.mock('../repositories/workspace.repository', () => ({
   WorkspaceRepository: jest.fn().mockImplementation(() => ({
@@ -27,6 +30,13 @@ jest.mock('../repositories/workspace.repository', () => ({
     create: mockWsCreate,
     getById: mockWsGetById,
     addMember: mockWsAddMember,
+    delete: mockWsDelete,
+  })),
+}));
+
+jest.mock('../repositories/task.repository', () => ({
+  TaskRepository: jest.fn().mockImplementation(() => ({
+    deleteByWorkspaceId: mockTaskDeleteByWorkspaceId,
   })),
 }));
 
@@ -133,6 +143,44 @@ describe('Workspace Routes', () => {
         userId: 'test-user-id',
         role: 'editor'
       }));
+    });
+  });
+
+  describe('DELETE /api/workspaces/:id', () => {
+    it('should delete workspace and tasks if user is owner', async () => {
+      const workspace = { id: 'ws1', ownerId: 'test-user-id' };
+      mockWsGetById.mockResolvedValue(workspace);
+      mockWsDelete.mockResolvedValue(undefined);
+      mockTaskDeleteByWorkspaceId.mockResolvedValue(undefined);
+
+      const res = await request(app)
+        .delete('/api/workspaces/ws1')
+        .set('Authorization', 'Bearer fake-token');
+
+      expect(res.status).toBe(200);
+      expect(mockTaskDeleteByWorkspaceId).toHaveBeenCalledWith('ws1');
+      expect(mockWsDelete).toHaveBeenCalledWith('ws1');
+    });
+
+    it('should return 400 when trying to delete personal workspace', async () => {
+      const res = await request(app)
+        .delete('/api/workspaces/personal-test-user-id')
+        .set('Authorization', 'Bearer fake-token');
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain('personal workspace');
+    });
+
+    it('should return 403 if user is not the owner', async () => {
+      const workspace = { id: 'ws1', ownerId: 'other-user' };
+      mockWsGetById.mockResolvedValue(workspace);
+
+      const res = await request(app)
+        .delete('/api/workspaces/ws1')
+        .set('Authorization', 'Bearer fake-token');
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.message).toContain('owner');
     });
   });
 });

@@ -49,6 +49,11 @@ export class InProcessTaskRepository extends InProcessRepository<Task> implement
     return null;
   }
 
+  async deleteByWorkspaceId(workspaceId: string): Promise<void> {
+    const tasksToDelete = Array.from(this.items.values()).filter(t => t.workspaceId === workspaceId);
+    tasksToDelete.forEach(t => this.items.delete(t.id));
+  }
+
   seed(userId: string) {
     const now = new Date().toISOString();
     const mockTasks: Task[] = [

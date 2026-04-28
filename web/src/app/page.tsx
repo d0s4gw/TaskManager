@@ -108,6 +108,25 @@ export default function Home() {
     setIsInviteDialogOpen(true);
   };
 
+  const handleDeleteWorkspace = async (id: string) => {
+    const workspace = workspaces.find(w => w.id === id);
+    if (!workspace) return;
+
+    if (!window.confirm(`Are you sure you want to delete "${workspace.name}"? This will permanently delete all tasks in this workspace.`)) {
+      return;
+    }
+
+    try {
+      await getApi().deleteWorkspace(id);
+      setWorkspaces(prev => prev.filter(w => w.id !== id));
+      if (currentWorkspaceId === id) {
+        setCurrentWorkspaceId(null);
+      }
+    } catch {
+      setError("Failed to delete workspace");
+    }
+  };
+
   const onSendInvite = async (email: string, role: WorkspaceRole) => {
     if (!workspaceToInvite) return;
     await getApi().inviteMember(workspaceToInvite, email, role);
@@ -265,12 +284,14 @@ export default function Home() {
             <WorkspaceSwitcher 
               workspaces={workspaces}
               currentWorkspaceId={currentWorkspaceId}
+              currentUserId={user?.uid}
               onSelect={(id) => {
                 setCurrentWorkspaceId(id);
                 setIsSidebarOpen(false);
               }}
               onCreate={handleCreateWorkspace}
               onInvite={handleInvite}
+              onDelete={handleDeleteWorkspace}
             />
           </aside>
         )}

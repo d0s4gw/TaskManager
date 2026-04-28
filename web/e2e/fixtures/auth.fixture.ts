@@ -177,6 +177,10 @@ function createWorkspaceStore() {
       workspaces.push(workspace);
       return workspace;
     },
+    delete: (id: string) => {
+      const index = workspaces.findIndex(w => w.id === id);
+      if (index !== -1) workspaces.splice(index, 1);
+    },
   };
 }
 
@@ -307,7 +311,21 @@ async function mockApi(
       });
     }
 
-    console.log("FALLTHROUGH", request.method(), url.href); return route.continue();
+    // DELETE /api/workspaces/:id
+    if (request.method() === 'DELETE' && url.pathname.startsWith('/api/workspaces/')) {
+      const id = url.pathname.split('/').pop()!;
+      workspaceStore.delete(id);
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          metadata: { timestamp: new Date().toISOString() },
+        }),
+      });
+    }
+
+    return route.continue();
   });
 }
 
