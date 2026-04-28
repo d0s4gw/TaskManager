@@ -1,14 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Tasks collection: Only allow users to read their own tasks.
-    // Writes (create, update, delete) are handled by the backend API.
+    // Tasks collection: Only allow members of the task's workspace to read.
     match /tasks/{taskId} {
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.userId || 
-        request.auth.token.admin == true
+        get(/databases/$(database)/documents/workspaces/$(resource.data.workspaceId)).data.memberIds.hasAny([request.auth.uid])
       );
-      allow write: if false;
+      allow write: if false; // Handled by Backend API
+    }
+
+    // Workspaces collection
+    match /workspaces/{workspaceId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.ownerId ||
+        resource.data.memberIds.hasAny([request.auth.uid])
+      );
+      allow write: if false; // Handled by Backend API
     }
 
     // Default deny for all other collections.

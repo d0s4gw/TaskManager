@@ -1,5 +1,6 @@
 import { test as base, Page } from '@playwright/test';
 import { Task } from '../../../shared/task';
+import { Workspace } from '../../../shared/workspace';
 
 /**
  * Mock Firebase user returned by the intercepted auth endpoint.
@@ -26,6 +27,7 @@ export const SEED_TASKS: Task[] = [
     priority: 'high',
     dueDate: new Date('2026-05-01').toISOString(),
     userId: MOCK_USER.uid,
+    workspaceId: `personal-${MOCK_USER.uid}`,
     createdAt: new Date('2026-04-20').toISOString(),
     updatedAt: new Date('2026-04-20').toISOString(),
     position: 0,
@@ -37,6 +39,7 @@ export const SEED_TASKS: Task[] = [
     completed: false,
     priority: 'medium',
     userId: MOCK_USER.uid,
+    workspaceId: `personal-${MOCK_USER.uid}`,
     createdAt: new Date('2026-04-21').toISOString(),
     updatedAt: new Date('2026-04-21').toISOString(),
     position: 1,
@@ -47,6 +50,7 @@ export const SEED_TASKS: Task[] = [
     completed: true,
     priority: 'low',
     userId: MOCK_USER.uid,
+    workspaceId: `personal-${MOCK_USER.uid}`,
     createdAt: new Date('2026-04-19').toISOString(),
     updatedAt: new Date('2026-04-22').toISOString(),
     position: 2,
@@ -120,7 +124,12 @@ function createTaskStore(initial: Task[] = [...SEED_TASKS]) {
   let nextPosition = tasks.length;
 
   return {
-    getAll: () => [...tasks],
+    getAll: (workspaceId?: string) => {
+      if (workspaceId) {
+        return tasks.filter(t => t.workspaceId === workspaceId);
+      }
+      return [...tasks];
+    },
     create: (data: Partial<Task>): Task => {
       const task: Task = {
         id: `task-${Date.now()}`,
@@ -149,24 +158,54 @@ function createTaskStore(initial: Task[] = [...SEED_TASKS]) {
   };
 }
 
-async function mockTaskApi(page: Page, store: ReturnType<typeof createTaskStore>) {
-  // GET /api/tasks
-  await page.route('**/api/tasks', async (route, request) => {
+function createWorkspaceStore() {
+  const workspaces: Workspace[] = [];
+
+  return {
+    getAll: () => [...workspaces],
+    create: (data: { name: string }): Workspace => {
+      const workspace: Workspace = {
+        id: `workspace-${Date.now()}`,
+        name: data.name,
+        ownerId: MOCK_USER.uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        members: [{ userId: MOCK_USER.uid, role: 'owner', joinedAt: new Date().toISOString() }],
+        memberIds: [MOCK_USER.uid],
+      };
+      workspaces.push(workspace);
+      return workspace;
+    },
+  };
+}
+
+async function mockApi(
+  page: Page,
+  taskStore: ReturnType<typeof createTaskStore>,
+  workspaceStore: ReturnType<typeof createWorkspaceStore>
+) {
+  await page.route('**/api/tasks**', async (route, request) => {
+    const url = new URL(request.url());
+
+    
+    // GET /api/tasks
     if (request.method() === 'GET') {
+      const workspaceId = url.searchParams.get('workspaceId') || undefined;
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           success: true,
-          data: store.getAll(),
+          data: taskStore.getAll(workspaceId),
           metadata: { timestamp: new Date().toISOString() },
         }),
       });
     }
 
+    // POST /api/tasks
     if (request.method() === 'POST') {
       const body = request.postDataJSON();
-      const task = store.create(body);
+      const task = taskStore.create(body);
       return route.fulfill({
         status: 201,
         contentType: 'application/json',
@@ -178,17 +217,72 @@ async function mockTaskApi(page: Page, store: ReturnType<typeof createTaskStore>
       });
     }
 
+    // PUT & DELETE /api/tasks/:id
+    const id = url.pathname.split('/').pop()!;
+    if (id !== 'tasks') {
+      if (request.method() === 'PUT') {
+        const body = request.postDataJSON();
+        taskStore.update(id, body);
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            metadata: { timestamp: new Date().toISOString() },
+          }),
+        });
+      }
+
+      if (request.method() === 'DELETE') {
+        taskStore.delete(id);
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            metadata: { timestamp: new Date().toISOString() },
+          }),
+        });
+      }
+    }
+
     return route.continue();
   });
 
-  // PUT & DELETE /api/tasks/:id
-  await page.route('**/api/tasks/*', async (route, request) => {
+  // Mock Workspace API
+  await page.route('**/api/workspaces**', async (route, request) => {
     const url = new URL(request.url());
-    const id = url.pathname.split('/').pop()!;
 
-    if (request.method() === 'PUT') {
+    // GET /api/workspaces
+    if (url.pathname === '/api/workspaces' && request.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: workspaceStore.getAll(),
+          metadata: { timestamp: new Date().toISOString() },
+        }),
+      });
+    }
+
+    // POST /api/workspaces
+    if (url.pathname === '/api/workspaces' && request.method() === 'POST') {
       const body = request.postDataJSON();
-      store.update(id, body);
+      const workspace = workspaceStore.create(body);
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: workspace,
+          metadata: { timestamp: new Date().toISOString() },
+        }),
+      });
+    }
+
+    // POST /api/workspaces/:id/invite
+    if (url.pathname.endsWith('/invite') && request.method() === 'POST') {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -199,19 +293,20 @@ async function mockTaskApi(page: Page, store: ReturnType<typeof createTaskStore>
       });
     }
 
-    if (request.method() === 'DELETE') {
-      store.delete(id);
+    // POST /api/workspaces/accept/:token
+    if (url.pathname.includes('/accept/') && request.method() === 'POST') {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           success: true,
+          data: { workspaceId: 'e2e-mock-workspace' },
           metadata: { timestamp: new Date().toISOString() },
         }),
       });
     }
 
-    return route.continue();
+    console.log("FALLTHROUGH", request.method(), url.href); return route.continue();
   });
 }
 
@@ -222,6 +317,8 @@ type AuthFixtures = {
   authenticatedPage: Page;
   /** The in-memory task store backing the mock API for this test. */
   taskStore: ReturnType<typeof createTaskStore>;
+  /** The in-memory workspace store backing the mock API for this test. */
+  workspaceStore: ReturnType<typeof createWorkspaceStore>;
 };
 
 export const test = base.extend<AuthFixtures>({
@@ -231,18 +328,24 @@ export const test = base.extend<AuthFixtures>({
     await use(store);
   },
 
-  authenticatedPage: async ({ page, taskStore }, use) => {
+  workspaceStore: async ({}, use) => {
+    const store = createWorkspaceStore();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    await use(store);
+  },
+
+  authenticatedPage: async ({ page, taskStore, workspaceStore }, use) => {
     // 1. Mock Firebase auth endpoints
     await mockFirebaseAuth(page);
 
     // 2. Inject mock user into the page context
     await injectMockUser(page);
 
-    // 3. Mock the Task API
-    await mockTaskApi(page, taskStore);
+    // 3. Mock the Task and Workspace API
+    await mockApi(page, taskStore, workspaceStore);
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    await use(page);
+    page.on("request", r => console.log("[REQ]", r.method(), r.url())); await use(page);
   },
 });
 

@@ -5,8 +5,11 @@ import { useAuth } from "@/context/AuthContext";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { TaskDetail } from "@/components/TaskDetail";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { InviteMemberDialog } from "@/components/InviteMemberDialog";
 import { Task, CreateTaskDTO, UpdateTaskDTO } from "../../../shared/task";
-import { LogOut, Loader2 } from "lucide-react";
+import { Workspace } from "../../../shared/workspace";
+import { LogOut, Loader2, Menu, X } from "lucide-react";
 import { TaskApi } from "@/lib/api";
 import Image from "next/image";
 import {
@@ -24,7 +27,12 @@ import {
 export default function Home() {
   const { user, loading: authLoading, loginWithGoogle, loginWithMock, logout } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [workspaceToInvite, setWorkspaceToInvite] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -32,27 +40,78 @@ export default function Home() {
 
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTasksLoading(true);
-      const unsubscribe = getApi().subscribeToTasks(user.uid, (data) => {
-        setTasks(data);
-        setTasksLoading(false);
+      // Use a microtask to avoid synchronous state update in effect body
+      Promise.resolve().then(() => {
+        setTasks([]);
+        setTasksLoading(true);
       });
+      const api = getApi();
+      
+      // Fetch workspaces
+      api.getWorkspaces().then(setWorkspaces).catch(console.error);
+
+      let unsubscribe: () => void;
+      
+      if (currentWorkspaceId) {
+        unsubscribe = api.subscribeToWorkspaceTasks(currentWorkspaceId, (data) => {
+          setTasks(data);
+          setTasksLoading(false);
+        });
+      } else {
+        const personalId = 'personal-' + user.uid;
+        unsubscribe = api.subscribeToWorkspaceTasks(personalId, (data) => {
+          setTasks(data);
+          setTasksLoading(false);
+        });
+      }
+      
       return () => unsubscribe();
     } else {
-      setTasks([]);
+      Promise.resolve().then(() => {
+        setTasks([]);
+        setWorkspaces([]);
+      });
     }
-  }, [user, getApi]);
+  }, [user, getApi, currentWorkspaceId]);
 
   const handleAddTask = async (taskData: CreateTaskDTO) => {
     setError(null);
     try {
-      const newTask = await getApi().createTask(taskData);
+      // Inject workspaceId if missing (from schema)
+      const dataWithWorkspace = {
+        ...taskData,
+        workspaceId: currentWorkspaceId || 'personal-' + user?.uid
+      };
+      const newTask = await getApi().createTask(dataWithWorkspace);
       setTasks(prev => [...prev, newTask]);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to add task";
       setError(message);
     }
+  };
+
+  const handleCreateWorkspace = async () => {
+    const name = prompt("Enter workspace name:");
+    if (!name) return;
+    
+    try {
+      const ws = await getApi().createWorkspace({ name });
+      setWorkspaces(prev => [...prev, ws]);
+      setCurrentWorkspaceId(ws.id);
+    } catch {
+      setError("Failed to create workspace");
+    }
+  };
+
+  const handleInvite = (id: string) => {
+    setWorkspaceToInvite(id);
+    setIsInviteDialogOpen(true);
+  };
+
+  const onSendInvite = async (email: string, role: WorkspaceRole) => {
+    if (!workspaceToInvite) return;
+    await getApi().inviteMember(workspaceToInvite, email, role);
+    alert("Invite sent! (Mock)");
   };
 
   const handleUpdateTask = async (id: string, updates: UpdateTaskDTO) => {
@@ -195,76 +254,106 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-        {!user ? (
-          <div className="space-y-12">
-            <section className="text-center space-y-4">
-              <h1 className="text-5xl md:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">
-                Master your workflow <br/>
-                <span className="text-indigo-600 dark:text-indigo-400">without the complexity.</span>
-              </h1>
-              <p className="text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-                A minimalist, high-performance task manager designed for teams who value speed and clarity.
-              </p>
-              <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button 
-                  onClick={loginWithGoogle}
-                  className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-500/20"
-                >
-                  Get Started for Free
-                </button>
-                {process.env.NODE_ENV === 'development' && (
-                  <button 
-                    onClick={loginWithMock}
-                    className="px-8 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white rounded-2xl font-semibold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    Try Mock Login
-                  </button>
-                )}
-              </div>
-            </section>
-          </div>
-        ) : (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">Your Tasks</h2>
-                <p className="text-zinc-500 dark:text-zinc-400 mt-1">Focus on what matters today.</p>
-              </div>
-            </div>
-
-            {error && (
-              <div data-testid="error-banner" className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-2xl text-red-600 dark:text-red-400 text-sm flex items-center justify-between">
-                <span>{error}</span>
-                <button onClick={() => setError(null)} className="font-bold">×</button>
-              </div>
+      <main className="max-w-7xl mx-auto px-6 py-12 md:py-20 flex gap-12">
+        {user && (
+          <aside className={`${isSidebarOpen ? 'fixed inset-0 z-40 bg-white dark:bg-black p-6' : 'hidden'} md:block md:w-64 flex-shrink-0 space-y-8`}>
+            {isSidebarOpen && (
+              <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute top-4 right-4 p-2">
+                <X size={24} />
+              </button>
             )}
-
-            <TaskForm 
-              onAddTask={handleAddTask} 
-              suggestions={Array.from(new Set(tasks.map(t => t.title)))} 
+            <WorkspaceSwitcher 
+              workspaces={workspaces}
+              currentWorkspaceId={currentWorkspaceId}
+              onSelect={(id) => {
+                setCurrentWorkspaceId(id);
+                setIsSidebarOpen(false);
+              }}
+              onCreate={handleCreateWorkspace}
+              onInvite={handleInvite}
             />
-
-            {tasksLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 size={32} className="animate-spin text-zinc-300" />
-              </div>
-            ) : (
-            <DndContext 
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <TaskList 
-                tasks={tasks} 
-                onToggle={handleToggleTask} 
-                onDelete={handleDeleteTask} 
-                onSelectTask={(task) => setSelectedTask(task)}
-              />
-            </DndContext>
-            )}
-          </div>
+          </aside>
         )}
+
+        <div className="flex-1 max-w-3xl">
+          {!user ? (
+            <div className="space-y-12">
+              <section className="text-center space-y-4">
+                <h1 className="text-5xl md:text-6xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">
+                  Master your workflow <br/>
+                  <span className="text-indigo-600 dark:text-indigo-400">without the complexity.</span>
+                </h1>
+                <p className="text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
+                  A minimalist, high-performance task manager designed for teams who value speed and clarity.
+                </p>
+                <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <button 
+                    onClick={loginWithGoogle}
+                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-500/20"
+                  >
+                    Get Started for Free
+                  </button>
+                  {process.env.NODE_ENV === 'development' && (
+                    <button 
+                      onClick={loginWithMock}
+                      className="px-8 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white rounded-2xl font-semibold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Try Mock Login
+                    </button>
+                  )}
+                </div>
+              </section>
+            </div>
+          ) : (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">
+                    {currentWorkspaceId ? workspaces.find(w => w.id === currentWorkspaceId)?.name : 'Personal Tasks'}
+                  </h2>
+                  <p className="text-zinc-500 dark:text-zinc-400 mt-1">Focus on what matters today.</p>
+                </div>
+                <button 
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="md:hidden p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                >
+                  <Menu size={24} />
+                </button>
+              </div>
+
+              {error && (
+                <div data-testid="error-banner" className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-2xl text-red-600 dark:text-red-400 text-sm flex items-center justify-between">
+                  <span>{error}</span>
+                  <button onClick={() => setError(null)} className="font-bold">×</button>
+                </div>
+              )}
+
+              <TaskForm 
+                onAddTask={handleAddTask} 
+                suggestions={Array.from(new Set(tasks.map(t => t.title)))} 
+              />
+
+              {tasksLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 size={32} className="animate-spin text-zinc-300" />
+                </div>
+              ) : (
+              <DndContext 
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <TaskList 
+                  tasks={tasks} 
+                  onToggle={handleToggleTask} 
+                  onDelete={handleDeleteTask} 
+                  onSelectTask={(task) => setSelectedTask(task)}
+                />
+              </DndContext>
+              )}
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Task Detail Sidebar */}
@@ -276,6 +365,13 @@ export default function Home() {
         onDelete={handleDeleteTask}
         onToggle={handleToggleTask}
         suggestions={Array.from(new Set(tasks.map(t => t.title)))}
+      />
+
+      <InviteMemberDialog
+        isOpen={isInviteDialogOpen}
+        onClose={() => setIsInviteDialogOpen(false)}
+        onInvite={onSendInvite}
+        workspaceName={workspaces.find(w => w.id === workspaceToInvite)?.name || ''}
       />
 
       <footer className="py-12 border-t border-zinc-200 dark:border-zinc-800">

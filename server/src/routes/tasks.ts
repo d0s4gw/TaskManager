@@ -2,6 +2,8 @@ import { Router, Response } from 'express';
 import { AuthRequest, verifyToken } from '../middleware/auth';
 import { ITaskRepository, TaskRepository } from '../repositories/task.repository';
 import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
+import { IWorkspaceRepository, WorkspaceRepository } from '../repositories/workspace.repository';
+import { InProcessWorkspaceRepository } from '../repositories/in-process-workspace.repository';
 import { CreateTaskDTO, UpdateTaskDTO } from '@shared/task';
 import { APIResponse } from '@shared/api';
 import { createTaskSchema, updateTaskSchema } from '@shared/validation';
@@ -14,18 +16,27 @@ const router = Router();
 // Use in-memory repository for development to avoid Java/Emulator dependency
 const useMockRepo = process.env.NODE_ENV === 'development';
 let taskRepository: ITaskRepository;
+let workspaceRepository: IWorkspaceRepository;
 
 if (useMockRepo) {
   const mockRepo = new InProcessTaskRepository();
   mockRepo.seed('mock-user-123');
   taskRepository = mockRepo;
-  logger.info('Using In-Memory Task Repository (Seeded)');
+  workspaceRepository = new InProcessWorkspaceRepository();
+  logger.info('Using In-Memory Task & Workspace Repositories (Seeded)');
 } else {
   taskRepository = new TaskRepository();
+  workspaceRepository = new WorkspaceRepository();
 }
 
 // Apply auth middleware to all task routes
 router.use(verifyToken);
+
+// Helper to check workspace membership
+async function checkWorkspaceMembership(workspaceId: string, userId: string): Promise<boolean> {
+  const workspace = await workspaceRepository.getById(workspaceId);
+  return !!workspace && workspace.memberIds.includes(userId);
+}
 
 // Get all tasks for the logged-in user
 router.get('/', async (req: AuthRequest, res: Response) => {
@@ -35,8 +46,19 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
     }
 
-    const tasks = await taskRepository.getByUserId(userId);
-    logger.info('Fetched tasks', { userId, count: tasks.length });
+    const { workspaceId } = req.query;
+    let tasks;
+    if (workspaceId) {
+      const isMember = await checkWorkspaceMembership(workspaceId as string, userId);
+      if (!isMember) {
+        return res.status(403).json({ success: false, error: { message: 'Forbidden: You are not a member of this workspace' } });
+      }
+      tasks = await taskRepository.getByWorkspaceId(workspaceId as string);
+    } else {
+      tasks = await taskRepository.getByUserId(userId);
+    }
+    
+    logger.info('Fetched tasks', { userId, workspaceId, count: tasks.length });
     const response: APIResponse<any> = {
       success: true,
       data: tasks,
@@ -61,7 +83,12 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     }
 
     const validatedData = createTaskSchema.parse(req.body);
-    const { title, description, priority, dueDate, category } = validatedData;
+    const { title, description, priority, dueDate, category, workspaceId } = validatedData;
+
+    const isMember = await checkWorkspaceMembership(workspaceId, userId);
+    if (!isMember) {
+      return res.status(403).json({ success: false, error: { message: 'Forbidden: You are not a member of this workspace' } });
+    }
 
     const now = new Date().toISOString();
     const newTask = await taskRepository.createWithId({
@@ -72,6 +99,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       dueDate: dueDate || '',
       category: category || '',
       userId,
+      workspaceId,
       createdAt: now,
       updatedAt: now,
     });
@@ -111,9 +139,15 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
     }
 
-    const existingTask = await taskRepository.getByIdAndUserId(id as string, userId);
+    const existingTask = await taskRepository.getById(id as string);
     if (!existingTask) {
       return res.status(404).json({ success: false, error: { message: 'Task not found' } });
+    }
+
+    // Check if user is creator OR member of the workspace
+    const isMember = await checkWorkspaceMembership(existingTask.workspaceId, userId);
+    if (existingTask.userId !== userId && !isMember) {
+      return res.status(403).json({ success: false, error: { message: 'Forbidden' } });
     }
 
     const validatedData = updateTaskSchema.parse(req.body);
@@ -170,9 +204,15 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
     }
 
-    const existingTask = await taskRepository.getByIdAndUserId(id as string, userId);
+    const existingTask = await taskRepository.getById(id as string);
     if (!existingTask) {
       return res.status(404).json({ success: false, error: { message: 'Task not found' } });
+    }
+
+    // Check if user is creator OR member of the workspace
+    const isMember = await checkWorkspaceMembership(existingTask.workspaceId, userId);
+    if (existingTask.userId !== userId && !isMember) {
+      return res.status(403).json({ success: false, error: { message: 'Forbidden' } });
     }
 
     await taskRepository.delete(id as string);

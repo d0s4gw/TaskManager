@@ -9,12 +9,18 @@ export class InProcessTaskRepository extends InProcessRepository<Task> implement
       .sort((a, b) => (a.position || 0) - (b.position || 0));
   }
 
+  async getByWorkspaceId(workspaceId: string): Promise<Task[]> {
+    return Array.from(this.items.values())
+      .filter(task => task.workspaceId === workspaceId)
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
+  }
+
   async createWithId(data: Omit<Task, 'id' | 'position'> & { position?: number }): Promise<Task> {
     const id = `mock-task-${Date.now()}`;
     
     // Find current max position
-    const userTasks = await this.getByUserId(data.userId);
-    const maxPosition = userTasks.reduce((max, t) => Math.max(max, t.position || 0), -1);
+    const workspaceTasks = await this.getByWorkspaceId(data.workspaceId);
+    const maxPosition = workspaceTasks.reduce((max, t) => Math.max(max, t.position || 0), -1);
     const position = data.position !== undefined ? data.position : maxPosition + 1;
 
     const newTask: Task = {
@@ -35,6 +41,14 @@ export class InProcessTaskRepository extends InProcessRepository<Task> implement
     return null;
   }
 
+  async getByIdAndWorkspaceId(id: string, workspaceId: string): Promise<Task | null> {
+    const task = await this.getById(id);
+    if (task && task.workspaceId === workspaceId) {
+      return task;
+    }
+    return null;
+  }
+
   seed(userId: string) {
     const now = new Date().toISOString();
     const mockTasks: Task[] = [
@@ -45,6 +59,7 @@ export class InProcessTaskRepository extends InProcessRepository<Task> implement
         completed: false,
         priority: 'high',
         userId,
+        workspaceId: 'personal-workspace-123',
         position: 0,
         createdAt: now,
         updatedAt: now,
@@ -57,6 +72,7 @@ export class InProcessTaskRepository extends InProcessRepository<Task> implement
         completed: true,
         priority: 'medium',
         userId,
+        workspaceId: 'personal-workspace-123',
         position: 1,
         createdAt: now,
         updatedAt: now,

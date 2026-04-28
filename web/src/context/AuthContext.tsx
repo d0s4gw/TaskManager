@@ -40,11 +40,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithMock = useCallback(() => {
     if (process.env.NODE_ENV !== 'development') return;
     
-    const mockUser = {
+    const mockData = {
       uid: 'mock-user-123',
       email: 'agent@test.com',
       displayName: 'Agent Gemini',
       photoURL: 'https://lh3.googleusercontent.com/a/mock',
+    };
+
+    if (typeof window !== 'undefined') {
+      window.__E2E_MOCK_USER__ = mockData;
+    }
+    
+    const mockUser = {
+      ...mockData,
       getIdToken: () => Promise.resolve('e2e-mock-firebase-id-token'),
     } as unknown as User;
     

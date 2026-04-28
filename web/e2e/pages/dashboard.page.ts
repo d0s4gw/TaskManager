@@ -25,7 +25,7 @@ export class DashboardPage {
   constructor(page: Page) {
     this.page = page;
 
-    this.heading = page.getByRole('heading', { name: 'Your Tasks' });
+    this.heading = page.getByRole('heading', { name: 'Personal Tasks' });
     this.logoutButton = page.getByTitle('Log Out');
 
     this.taskInput = page.getByPlaceholder('What needs to be done?');

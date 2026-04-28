@@ -4,8 +4,11 @@ import * as admin from 'firebase-admin';
 
 export interface ITaskRepository {
   getByUserId(userId: string): Promise<Task[]>;
+  getByWorkspaceId(workspaceId: string): Promise<Task[]>;
   createWithId(data: Omit<Task, 'id' | 'position'> & { position?: number }): Promise<Task>;
+  getById(id: string): Promise<Task | null>;
   getByIdAndUserId(id: string, userId: string): Promise<Task | null>;
+  getByIdAndWorkspaceId(id: string, workspaceId: string): Promise<Task | null>;
   update(id: string, data: Partial<Task>): Promise<void>;
   delete(id: string): Promise<void>;
 }
@@ -23,6 +26,14 @@ export class TaskRepository extends BaseRepository<Task> implements ITaskReposit
     return snapshot.docs.map(doc => doc.data() as Task);
   }
 
+  async getByWorkspaceId(workspaceId: string): Promise<Task[]> {
+    const snapshot = await this.collection
+      .where('workspaceId', '==', workspaceId)
+      .orderBy('position', 'asc')
+      .get();
+    return snapshot.docs.map(doc => doc.data() as Task);
+  }
+
   async createWithId(data: Omit<Task, 'id' | 'position'> & { position?: number }): Promise<Task> {
     const docRef = this.collection.doc();
     
@@ -30,7 +41,7 @@ export class TaskRepository extends BaseRepository<Task> implements ITaskReposit
     let position = data.position;
     if (position === undefined) {
       const lastTaskSnapshot = await this.collection
-        .where('userId', '==', data.userId)
+        .where('workspaceId', '==', data.workspaceId)
         .orderBy('position', 'desc')
         .limit(1)
         .get();
@@ -55,6 +66,14 @@ export class TaskRepository extends BaseRepository<Task> implements ITaskReposit
   async getByIdAndUserId(id: string, userId: string): Promise<Task | null> {
     const task = await this.getById(id);
     if (task && task.userId === userId) {
+      return task;
+    }
+    return null;
+  }
+
+  async getByIdAndWorkspaceId(id: string, workspaceId: string): Promise<Task | null> {
+    const task = await this.getById(id);
+    if (task && task.workspaceId === workspaceId) {
       return task;
     }
     return null;

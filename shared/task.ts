@@ -9,6 +9,7 @@ export interface Task {
   dueDate?: string;
   category?: string;
   userId: string;
+  workspaceId: string;
   createdAt: string;
   updatedAt: string;
   position: number;

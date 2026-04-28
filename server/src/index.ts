@@ -34,6 +34,7 @@ if (!admin.apps.length) {
 }
 
 import taskRoutes from './routes/tasks';
+import workspaceRoutes from './routes/workspaces';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 
@@ -72,6 +73,7 @@ app.use(expressWinston.logger({
 
 // Task Routes
 app.use('/api/tasks', taskRoutes);
+app.use('/api/workspaces', workspaceRoutes);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
@@ -94,8 +96,8 @@ app.use(expressWinston.errorLogger({
 }));
 
 // Start Server
-app.listen(port, () => {
-  logger.info(`Server listening on port ${port}`);
+app.listen(Number(port), '0.0.0.0', () => {
+  logger.info(`Server listening on port ${port} (0.0.0.0)`);
 });
 
 export default app;
