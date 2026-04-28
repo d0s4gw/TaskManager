@@ -21,14 +21,21 @@ export function InviteMemberDialog({ isOpen, onClose, onInvite, workspaceName }:
 
   // Reset state when dialog opens/closes
   useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
     if (!isOpen) {
-      setTimeout(() => {
+      // Clear state after animation completes
+      timer = setTimeout(() => {
         setInvitationToken(null);
         setEmail('');
         setCopied(false);
         setError(null);
       }, 300);
     }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
