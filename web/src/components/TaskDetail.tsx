@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Calendar, AlertCircle, Trash2, CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { Task, UpdateTaskDTO } from '../../../shared/task';
 import { PredictiveInput } from './PredictiveInput';
+import { LabelInput } from './LabelInput';
 
 interface TaskDetailProps {
   task: Task | null;
@@ -24,6 +25,7 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
   const [description, setDescription] = useState(task?.description || '');
   const [priority, setPriority] = useState<Task['priority']>(task?.priority || 'none');
   const [dueDate, setDueDate] = useState(task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
+  const [labels, setLabels] = useState<string[]>(task?.labels || []);
   const [isSaving, setIsSaving] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +37,7 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
     setDescription(task.description || '');
     setPriority(task.priority);
     setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
+    setLabels(task.labels || []);
   }
 
   // Handle Escape key to close
@@ -166,6 +169,15 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
                   />
                 </div>
               </div>
+
+              {/* Labels */}
+              <LabelInput 
+                labels={labels} 
+                onChange={(newLabels) => {
+                  setLabels(newLabels);
+                  handleUpdate({ labels: newLabels });
+                }} 
+              />
 
               {/* Description */}
               <div className="space-y-2">

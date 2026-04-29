@@ -6,6 +6,7 @@ export const createTaskSchema = z.object({
   priority: z.enum(['none', 'low', 'medium', 'high']).optional(),
   dueDate: z.string().datetime().optional().or(z.literal('')),
   category: z.string().max(50).optional(),
+  labels: z.array(z.string().max(20)).max(10).optional(),
   workspaceId: z.string().min(1, 'Workspace ID is required'),
 });
 
@@ -16,6 +17,7 @@ export const updateTaskSchema = z.object({
   priority: z.enum(['none', 'low', 'medium', 'high']).optional(),
   dueDate: z.string().datetime().optional().or(z.literal('')),
   category: z.string().max(50).optional(),
+  labels: z.array(z.string().max(20)).max(10).optional(),
   position: z.number().optional(),
 });
 

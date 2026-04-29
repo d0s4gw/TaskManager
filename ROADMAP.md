@@ -12,7 +12,7 @@ This document outlines the high-level milestones and future direction of the Tas
 ## 🚀 Phase 2: Feature Parity & UX (In Progress)
 - [x] **Predictive Input**: Implementation of inline ghost text for task creation.
 - [x] **Documentation Audit**: Migration to Hub & Spoke model for ADRs and Roadmaps.
-- [ ] **Labels & Attachments**: Adding metadata and file support to tasks.
+- [x] **Labels**: Adding metadata and free-text tagging to tasks.
 - [x] **Multi-user Support**: Implementing RBAC and sharing invitations.
 
 ## 📱 Phase 3: Mobile & Offline (Upcoming)

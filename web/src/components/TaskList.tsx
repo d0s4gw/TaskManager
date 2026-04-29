@@ -3,6 +3,7 @@
 import React from 'react';
 import { CheckCircle2, Circle, Trash2, Calendar, GripVertical } from 'lucide-react';
 import { Task } from '../../../shared/task';
+import { stringToColorClass } from '../lib/colors';
 import {
   useSortable,
   SortableContext,
@@ -78,10 +79,15 @@ function SortableItem({ task, onToggle, onDelete, onSelectTask, index }: Sortabl
             {task.description}
           </p>
         )}
-        {(task.priority !== 'none' || task.dueDate) && (
-          <div className="flex gap-3 mt-1.5">
+        {(task.priority !== 'none' || task.dueDate || (task.labels && task.labels.length > 0)) && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {task.labels?.map(label => (
+              <span key={label} className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${stringToColorClass(label)}`}>
+                {label}
+              </span>
+            ))}
             {task.priority !== 'none' && (
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-transparent ${
                 task.priority === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
                 task.priority === 'medium' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
                 'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
@@ -90,7 +96,7 @@ function SortableItem({ task, onToggle, onDelete, onSelectTask, index }: Sortabl
               </span>
             )}
             {task.dueDate && (
-              <span className="text-[10px] font-medium text-zinc-400 flex items-center gap-1">
+              <span className="text-[10px] font-medium text-zinc-400 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/50 px-2 py-0.5 rounded-full">
                 <Calendar size={10} />
                 {new Date(task.dueDate).toLocaleDateString()}
               </span>

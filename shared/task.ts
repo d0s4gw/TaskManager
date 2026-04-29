@@ -13,6 +13,7 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   position: number;
+  labels?: string[];
 }
 
 export type { CreateTaskDTO, UpdateTaskDTO };
