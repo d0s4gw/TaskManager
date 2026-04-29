@@ -25,7 +25,6 @@ describe('TaskDetail', () => {
         onClose={vi.fn()} 
         onUpdate={vi.fn()} 
         onDelete={vi.fn()} 
-        onToggle={vi.fn()} 
         suggestions={[]}
       />
     );
@@ -40,7 +39,6 @@ describe('TaskDetail', () => {
         onClose={vi.fn()} 
         onUpdate={vi.fn()} 
         onDelete={vi.fn()} 
-        onToggle={vi.fn()} 
         suggestions={[]}
       />
     );
@@ -57,7 +55,6 @@ describe('TaskDetail', () => {
         onClose={vi.fn()} 
         onUpdate={vi.fn()} 
         onDelete={vi.fn()} 
-        onToggle={vi.fn()} 
         suggestions={[]}
       />
     );
@@ -75,7 +72,6 @@ describe('TaskDetail', () => {
         onClose={vi.fn()} 
         onUpdate={onUpdate} 
         onDelete={vi.fn()} 
-        onToggle={vi.fn()} 
         suggestions={[]}
       />
     );
@@ -96,7 +92,6 @@ describe('TaskDetail', () => {
         onClose={vi.fn()} 
         onUpdate={onUpdate} 
         onDelete={vi.fn()} 
-        onToggle={vi.fn()} 
         suggestions={[]}
       />
     );
@@ -107,26 +102,6 @@ describe('TaskDetail', () => {
     expect(onUpdate).toHaveBeenCalledWith('1', { priority: 'high' });
   });
 
-  it('calls onToggle when completion button is clicked', () => {
-    const onToggle = vi.fn().mockResolvedValue(undefined);
-    render(
-      <TaskDetail 
-        task={mockTask} 
-        isOpen={true} 
-        onClose={vi.fn()} 
-        onUpdate={vi.fn()} 
-        onDelete={vi.fn()} 
-        onToggle={onToggle} 
-        suggestions={[]}
-      />
-    );
-
-    // The first button in header is the toggle
-    const toggleButton = screen.getAllByRole('button')[0];
-    fireEvent.click(toggleButton);
-
-    expect(onToggle).toHaveBeenCalledWith('1', true);
-  });
 
   it('calls onDelete when delete button is clicked', () => {
     const onDelete = vi.fn().mockResolvedValue(undefined);
@@ -139,7 +114,6 @@ describe('TaskDetail', () => {
         onClose={vi.fn()} 
         onUpdate={vi.fn()} 
         onDelete={onDelete} 
-        onToggle={vi.fn()} 
         suggestions={[]}
       />
     );

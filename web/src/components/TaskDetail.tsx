@@ -12,11 +12,10 @@ interface TaskDetailProps {
   onClose: () => void;
   onUpdate: (id: string, updates: UpdateTaskDTO) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onToggle: (id: string, completed: boolean) => Promise<void>;
   suggestions?: string[];
 }
 
-export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle, suggestions = [] }: TaskDetailProps) {
+export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, suggestions = [] }: TaskDetailProps) {
   // Store the last non-null task to keep content visible during slide-out animation
   const [activeTask, setActiveTask] = useState<Task | null>(task);
   const [prevTaskId, setPrevTaskId] = useState<string | undefined>(task?.id);
@@ -90,13 +89,6 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center gap-3">
-                <button 
-                  data-testid="task-detail-toggle"
-                  onClick={() => onToggle(activeTask.id, !activeTask.completed)}
-                  className={`transition-colors ${activeTask.completed ? 'text-green-500' : 'text-zinc-300 dark:text-zinc-700 hover:text-indigo-500'}`}
-                >
-                  {activeTask.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
-                </button>
                 <div className="flex items-center gap-2">
                   {isSaving ? (
                     <span className="text-[10px] text-zinc-400 flex items-center gap-1">
@@ -187,7 +179,7 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, onToggle
                   onChange={(e) => setDescription(e.target.value)}
                   onBlur={() => handleBlur('description', description)}
                   placeholder="Add more details about this task..."
-                  className="w-full bg-transparent text-zinc-600 dark:text-zinc-400 border-none focus:ring-0 p-0 resize-none min-h-[200px] text-base leading-relaxed"
+                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-indigo-500 transition-all outline-none resize-none min-h-[200px] text-base leading-relaxed placeholder-zinc-400"
                 />
               </div>
             </div>

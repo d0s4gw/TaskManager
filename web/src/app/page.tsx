@@ -384,7 +384,6 @@ export default function Home() {
         onClose={() => setSelectedTask(null)}
         onUpdate={handleUpdateTask}
         onDelete={handleDeleteTask}
-        onToggle={handleToggleTask}
         suggestions={Array.from(new Set(tasks.map(t => t.title)))}
       />
 
