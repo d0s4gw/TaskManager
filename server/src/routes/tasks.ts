@@ -86,7 +86,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     }
 
     const validatedData = createTaskSchema.parse(req.body);
-    const { title, description, priority, dueDate, category, workspaceId } = validatedData;
+    const { title, description, priority, dueDate, category, workspaceId, labels } = validatedData;
 
     const isMember = await checkWorkspaceMembership(workspaceId, userId);
     if (!isMember) {
@@ -105,6 +105,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       workspaceId,
       createdAt: now,
       updatedAt: now,
+      labels: labels || [],
     });
 
 
@@ -154,7 +155,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     }
 
     const validatedData = updateTaskSchema.parse(req.body);
-    const { title, description, completed, priority, dueDate, category, position } = validatedData;
+    const { title, description, completed, priority, dueDate, category, position, labels } = validatedData;
     
     const updatedTask: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
@@ -167,6 +168,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     if (dueDate !== undefined) updatedTask.dueDate = dueDate;
     if (category !== undefined) updatedTask.category = category;
     if (position !== undefined) updatedTask.position = position;
+    if (labels !== undefined) updatedTask.labels = labels;
 
 
     await taskRepository.update(id as string, updatedTask);
