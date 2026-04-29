@@ -23,6 +23,16 @@ describe('PredictiveInput', () => {
     expect(screen.queryByText('t friend')).not.toBeInTheDocument();
   });
 
+  it('shows ghost text for mid-string matches', () => {
+    render(<PredictiveInput suggestions={['Meeting with client']} onValueChange={onValueChange} />);
+    const input = screen.getByRole('textbox');
+    
+    fireEvent.change(input, { target: { value: 'I need a me' } });
+    
+    // 'eting with client' should be suggested since "me" matches prefix of "Meeting with client"
+    expect(screen.getByText('eting with client')).toBeInTheDocument();
+  });
+
   it('accepts suggestion with Tab key', () => {
     render(<PredictiveInput suggestions={mockSuggestions} onValueChange={onValueChange} />);
     const input = screen.getByRole('textbox');
@@ -43,6 +53,17 @@ describe('PredictiveInput', () => {
     
     expect(input).toHaveValue('Meeting');
     expect(onValueChange).toHaveBeenCalledWith('Meeting');
+  });
+
+  it('accepts suggestion with mid-string lowercase casing', () => {
+    render(<PredictiveInput suggestions={['Meeting']} onValueChange={onValueChange} />);
+    const input = screen.getByRole('textbox');
+    
+    fireEvent.change(input, { target: { value: 'I need a m' } });
+    fireEvent.keyDown(input, { key: 'Tab' });
+    
+    expect(input).toHaveValue('I need a meeting');
+    expect(onValueChange).toHaveBeenCalledWith('I need a meeting');
   });
 
   it('hides ghost text on Escape', () => {

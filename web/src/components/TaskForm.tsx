@@ -7,16 +7,26 @@ import { logger } from '../lib/logger';
 import { PredictiveInput } from './PredictiveInput';
 
 const DEFAULT_SUGGESTIONS = [
-  "Meeting with",
-  "Call",
-  "Review",
-  "Buy",
-  "Schedule",
-  "Draft",
-  "Fix",
-  "Send email to",
-  "Check",
-  "Prepare"
+  "About", "Action", "Agenda", "Analytics", "And", "Approval", "Approve",
+  "Backlog", "Bill", "Budget", "Bug", "Buy",
+  "Call", "Campaign", "Cancel", "Car", "Check", "Clean", "Client", "Code", "Conference", "Cook", "Create", "Customer",
+  "Deliverable", "Dentist", "Deploy", "Deployment", "Design", "Discuss", "Doctor", "Documentation", "Draft",
+  "Email",
+  "Feature", "Feedback", "Fix", "Flight", "Follow", "For", "From",
+  "Groceries",
+  "Hire", "Hotel",
+  "Insurance", "Interview", "Invoice", "Item",
+  "KPI",
+  "Launch", "Lunch",
+  "Meeting", "Metrics", "Milestone", "Minutes",
+  "Notes",
+  "Objective", "Onboard", "Order", "Organize", "Outreach",
+  "Pay", "Payment", "Plan", "Prepare", "Presentation", "Project",
+  "Read", "Receipt", "Refinement", "Release", "Reply", "Report", "Research", "Retrospective", "Review", "Roadmap",
+  "Schedule", "Send", "Signoff", "Slides", "Sprint", "Stakeholder", "Standup", "Strategy", "Submit", "Sync",
+  "Taxes", "Test", "That", "The", "Their", "There", "This", "Ticket", "To", "Train",
+  "Update",
+  "Wash", "Webinar", "With", "Workshop", "Write"
 ];
 
 interface TaskFormProps {

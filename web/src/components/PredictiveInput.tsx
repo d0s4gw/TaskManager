@@ -16,7 +16,7 @@ export function PredictiveInput({
   ...props 
 }: PredictiveInputProps) {
   const [inputValue, setInputValue] = useState(String(value || ''));
-  const [activeSuggestions, setActiveSuggestions] = useState<string[]>([]);
+  const [matchState, setMatchState] = useState<{ suggestion: string, suffix: string, ghostText: string } | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,13 +33,37 @@ export function PredictiveInput({
     onValueChange(val);
 
     if (val.trim()) {
-      // Find suggestions that start with the input (case-insensitive)
-      const filtered = suggestions
-        .filter(s => s.toLowerCase().startsWith(val.toLowerCase()) && s.toLowerCase() !== val.toLowerCase())
-        .slice(0, 3);
-      setActiveSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
+      const lowerVal = val.toLowerCase();
+      const matchPrefixes: string[] = [];
+      matchPrefixes.push(lowerVal);
+      for (let i = 0; i < lowerVal.length; i++) {
+        if (lowerVal[i] === ' ') {
+          matchPrefixes.push(lowerVal.substring(i + 1));
+        }
+      }
+
+      let foundMatch = null;
+      for (const suffix of matchPrefixes) {
+        if (!suffix) continue;
+        for (const suggestion of suggestions) {
+          if (suggestion.toLowerCase().startsWith(suffix) && suggestion.length > suffix.length) {
+            const isFirstWord = lowerVal.trim().length === suffix.length;
+            const casedSuggestion = isFirstWord 
+              ? suggestion.charAt(0).toUpperCase() + suggestion.slice(1).toLowerCase()
+              : suggestion.toLowerCase();
+
+            const ghostText = casedSuggestion.substring(suffix.length);
+            foundMatch = { suggestion: casedSuggestion, suffix, ghostText };
+            break;
+          }
+        }
+        if (foundMatch) break;
+      }
+      
+      setMatchState(foundMatch);
+      setShowSuggestions(!!foundMatch);
     } else {
+      setMatchState(null);
       setShowSuggestions(false);
     }
   };
@@ -63,17 +87,15 @@ export function PredictiveInput({
   };
 
   // Calculate ghost text
-  const topSuggestion = activeSuggestions[0] || '';
-  const ghostText = (showSuggestions && topSuggestion && inputValue && topSuggestion.toLowerCase().startsWith(inputValue.toLowerCase()))
-    ? topSuggestion.slice(inputValue.length)
-    : '';
+  const ghostText = showSuggestions && matchState ? matchState.ghostText : '';
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Tab' || e.key === 'ArrowRight') && ghostText) {
+    if ((e.key === 'Tab' || e.key === 'ArrowRight') && matchState) {
       // Only accept if cursor is at the end
       if (e.currentTarget.selectionStart === inputValue.length) {
         e.preventDefault();
-        acceptSuggestion(topSuggestion);
+        const baseInput = inputValue.slice(0, -matchState.suffix.length);
+        acceptSuggestion(baseInput + matchState.suggestion);
       }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);

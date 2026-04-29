@@ -10,7 +10,7 @@ This document outlines the high-level milestones and future direction of the Tas
 - [x] Automated CI/CD Gating.
 
 ## 🚀 Phase 2: Feature Parity & UX (In Progress)
-- [/] **Predictive Input**: Implementation of inline ghost text for task creation.
+- [x] **Predictive Input**: Implementation of inline ghost text for task creation.
 - [x] **Documentation Audit**: Migration to Hub & Spoke model for ADRs and Roadmaps.
 - [ ] **Labels & Attachments**: Adding metadata and file support to tasks.
 - [x] **Multi-user Support**: Implementing RBAC and sharing invitations.
