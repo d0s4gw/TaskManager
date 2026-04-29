@@ -102,7 +102,9 @@ function SortableItem({ task, onToggle, onDelete, onSelectTask, index }: Sortabl
       <button 
         onClick={(e) => {
           e.stopPropagation();
-          onDelete(task.id);
+          if (window.confirm('Are you sure you want to delete this task?')) {
+            onDelete(task.id);
+          }
         }}
         aria-label="Delete task"
         className="opacity-0 group-hover:opacity-100 p-2 text-zinc-400 hover:text-red-500 transition-all rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30"

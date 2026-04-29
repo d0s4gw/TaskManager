@@ -60,12 +60,15 @@ describe('TaskList', () => {
 
   it('calls onDelete when the delete button is clicked', () => {
     const onDelete = vi.fn();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={onDelete} onSelectTask={vi.fn()} />);
     
     const deleteButtons = screen.getAllByLabelText(/Delete task/i);
     fireEvent.click(deleteButtons[0]);
     
     expect(onDelete).toHaveBeenCalledWith('1');
+    expect(confirmSpy).toHaveBeenCalledWith('Are you sure you want to delete this task?');
+    confirmSpy.mockRestore();
   });
 
   it('renders a drag handle for each task', () => {
