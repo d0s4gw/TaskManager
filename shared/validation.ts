@@ -1,5 +1,25 @@
 import { z } from 'zod';
 
+// Recursive schema for nested subtasks
+export const subtaskSchema: z.ZodType<any> = z.lazy(() => z.object({
+  id: z.string(),
+  title: z.string().max(100),
+  description: z.string().max(500).optional(),
+  completed: z.boolean(),
+  priority: z.enum(['none', 'low', 'medium', 'high']).optional(),
+  dueDate: z.string().datetime().optional().or(z.literal('')),
+  category: z.string().max(50).optional(),
+  labels: z.array(z.string().max(20)).max(10).optional(),
+  userId: z.string().optional(),
+  workspaceId: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  position: z.number().optional(),
+  subtasks: z.array(subtaskSchema).optional(),
+}));
+
+
+
 export const createTaskSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100),
   description: z.string().max(500).optional(),
@@ -8,6 +28,7 @@ export const createTaskSchema = z.object({
   category: z.string().max(50).optional(),
   labels: z.array(z.string().max(20)).max(10).optional(),
   workspaceId: z.string().min(1, 'Workspace ID is required'),
+  subtasks: z.array(subtaskSchema).optional(),
 });
 
 export const updateTaskSchema = z.object({
@@ -19,10 +40,12 @@ export const updateTaskSchema = z.object({
   category: z.string().max(50).optional(),
   labels: z.array(z.string().max(20)).max(10).optional(),
   position: z.number().optional(),
+  subtasks: z.array(subtaskSchema).optional(),
 });
 
 export type CreateTaskDTO = z.infer<typeof createTaskSchema>;
 export type UpdateTaskDTO = z.infer<typeof updateTaskSchema>;
+
 
 export const createWorkspaceSchema = z.object({
   name: z.string().min(1, 'Workspace name is required').max(50),

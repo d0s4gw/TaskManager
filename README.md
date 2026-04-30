@@ -16,7 +16,9 @@
 
 ## 🏗️ Architecture Highlights
 - **Workspace Management**: Multi-user support via shared workspaces and personal workspace auto-provisioning.
+- **Recursive Subtasks**: Infinite nesting support for task hierarchies with real-time progress tracking (e.g., "2/5 completed") visible across the list and detail views.
 - **Observability**: Structured JSON logging across all tiers for native Google Cloud Logging integration. Request-ID correlation enables cross-service debugging.
+
 - **Stateless Logic**: Scalable, containerized backend optimized for cold-start performance.
 
 ## 🚀 Deployment (GitOps)

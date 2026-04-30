@@ -22,14 +22,14 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
   if (process.env.NODE_ENV === 'development' && token === 'e2e-mock-firebase-id-token') {
     logger.info('Using E2E mock auth bypass', { requestId: req.requestId });
     req.user = {
-      uid: 'mock-user-123',
+      uid: 'e2e-user-123',
       email: 'agent@test.com',
       name: 'Agent Gemini',
       picture: 'https://lh3.googleusercontent.com/a/mock',
       auth_time: Math.floor(Date.now() / 1000),
       iss: 'https://securetoken.google.com/mock-project',
       aud: 'mock-project',
-      sub: 'mock-user-123',
+      sub: 'e2e-user-123',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 3600,
       firebase: {

@@ -17,9 +17,8 @@ export class WorkspaceRepository extends BaseRepository<Workspace> implements IW
 
   async getByUserId(userId: string): Promise<Workspace[]> {
     // Find workspaces where the user is in the members array
-    const snapshot = await this.collection
-      .where('members', 'array-contains', { userId }) // This might need a more specific query if we store objects
-      .get();
+    // Query workspaces where the user is in the memberIds array
+
     
     // Firestore array-contains with objects requires an exact match.
     // If we want to find any role, we might need a different structure or multiple queries.

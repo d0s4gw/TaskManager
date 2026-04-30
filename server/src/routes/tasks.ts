@@ -4,8 +4,8 @@ import { ITaskRepository, TaskRepository } from '../repositories/task.repository
 import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
 import { IWorkspaceRepository, WorkspaceRepository } from '../repositories/workspace.repository';
 import { InProcessWorkspaceRepository } from '../repositories/in-process-workspace.repository';
-import { CreateTaskDTO, UpdateTaskDTO } from '@shared/task';
-import { APIResponse } from '@shared/api';
+// Unused shared DTOs and APIResponse removed
+
 import { createTaskSchema, updateTaskSchema } from '@shared/validation';
 import logger from '../logger';
 import { ZodError } from 'zod';
@@ -20,7 +20,7 @@ let workspaceRepository: IWorkspaceRepository;
 
 if (useMockRepo) {
   const mockRepo = new InProcessTaskRepository();
-  mockRepo.seed('mock-user-123');
+  mockRepo.seed('e2e-user-123');
   taskRepository = mockRepo;
   workspaceRepository = new InProcessWorkspaceRepository();
   logger.info('Using In-Memory Task & Workspace Repositories (Seeded)');
@@ -138,8 +138,10 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.uid;
-    const { id } = req.params;
+    const id = req.params.id as string;
+    
     if (!userId) {
+
       return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
     }
 
@@ -155,7 +157,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     }
 
     const validatedData = updateTaskSchema.parse(req.body);
-    const { title, description, completed, priority, dueDate, category, position, labels } = validatedData;
+    const { title, description, completed, priority, dueDate, category, position, labels, subtasks } = validatedData;
+
     
     const updatedTask: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
@@ -169,6 +172,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     if (category !== undefined) updatedTask.category = category;
     if (position !== undefined) updatedTask.position = position;
     if (labels !== undefined) updatedTask.labels = labels;
+    if (subtasks !== undefined) updatedTask.subtasks = subtasks;
+
 
 
     await taskRepository.update(id as string, updatedTask);
@@ -181,6 +186,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     res.json(response);
   } catch (error) {
     if (error instanceof ZodError) {
+      logger.error('Validation Failed for update', { issues: error.issues });
       return res.status(400).json({ 
         success: false, 
         error: { 
@@ -189,6 +195,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         } 
       });
     }
+
     logger.error('Error updating task', {
       requestId: req.requestId,
       taskId: req.params.id,

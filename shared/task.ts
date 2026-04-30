@@ -14,6 +14,8 @@ export interface Task {
   updatedAt: string;
   position: number;
   labels?: string[];
+  subtasks?: Task[];
 }
+
 
 export type { CreateTaskDTO, UpdateTaskDTO };

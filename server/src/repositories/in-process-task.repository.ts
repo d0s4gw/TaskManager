@@ -81,8 +81,46 @@ export class InProcessTaskRepository extends InProcessRepository<Task> implement
         position: 1,
         createdAt: now,
         updatedAt: now,
-        category: 'Tutorial'
+        category: 'Tutorial',
+        subtasks: [
+          {
+            id: 'sub-task-1',
+            title: 'Add a subtask',
+            completed: true,
+            userId,
+            workspaceId: 'personal-workspace-123',
+            createdAt: now,
+            updatedAt: now,
+            position: 0,
+            priority: 'none'
+          },
+          {
+            id: 'sub-task-2',
+            title: 'Complete a subtask',
+            completed: false,
+            userId,
+            workspaceId: 'personal-workspace-123',
+            createdAt: now,
+            updatedAt: now,
+            position: 1,
+            priority: 'none',
+            subtasks: [
+              {
+                id: 'sub-sub-task-1',
+                title: 'Go even deeper',
+                completed: false,
+                userId,
+                workspaceId: 'personal-workspace-123',
+                createdAt: now,
+                updatedAt: now,
+                position: 0,
+                priority: 'low'
+              }
+            ]
+          }
+        ]
       }
+
     ];
     mockTasks.forEach(t => this.items.set(t.id, t));
   }

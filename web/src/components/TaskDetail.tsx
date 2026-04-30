@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Calendar, AlertCircle, Trash2, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { X, Calendar, AlertCircle, Trash2, CheckCircle2, Loader2, Plus } from 'lucide-react';
+
 import { Task, UpdateTaskDTO } from '../../../shared/task';
 import { PredictiveInput } from './PredictiveInput';
 import { LabelInput } from './LabelInput';
+import { NestedTaskItem } from './NestedTaskItem';
+
 
 interface TaskDetailProps {
   task: Task | null;
@@ -18,7 +21,7 @@ interface TaskDetailProps {
 export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, suggestions = [] }: TaskDetailProps) {
   // Store the last non-null task to keep content visible during slide-out animation
   const [activeTask, setActiveTask] = useState<Task | null>(task);
-  const [prevTaskId, setPrevTaskId] = useState<string | undefined>(task?.id);
+  const [prevTask, setPrevTask] = useState<Task | null>(task);
   
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
@@ -28,10 +31,10 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, suggesti
   const [isSaving, setIsSaving] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Synchronize internal state when the task prop changes (pattern from React docs)
-  if (task && task.id !== prevTaskId) {
+  // Synchronize internal state when the task prop changes (pattern for state-from-props with animation support)
+  if (task && task !== prevTask) {
     setActiveTask(task);
-    setPrevTaskId(task.id);
+    setPrevTask(task);
     setTitle(task.title);
     setDescription(task.description || '');
     setPriority(task.priority);
@@ -39,7 +42,9 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, suggesti
     setLabels(task.labels || []);
   }
 
+
   // Handle Escape key to close
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -171,6 +176,61 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, suggesti
                 }} 
               />
 
+              {/* Subtasks Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                    <CheckCircle2 size={12} /> Subtasks
+                  </label>
+                  {activeTask.subtasks && activeTask.subtasks.length > 0 && (
+                    <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">
+                      {activeTask.subtasks.filter(s => s.completed).length} / {activeTask.subtasks.length}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  {activeTask.subtasks?.map((subtask, index) => (
+                    <NestedTaskItem 
+                      key={subtask.id}
+                      task={subtask}
+                      level={0}
+                      onUpdate={(updatedSubtask) => {
+                        const newSubtasks = [...(activeTask.subtasks || [])];
+                        newSubtasks[index] = updatedSubtask;
+                        handleUpdate({ subtasks: newSubtasks });
+                      }}
+                      onDelete={() => {
+                        const newSubtasks = [...(activeTask.subtasks || [])];
+                        newSubtasks.splice(index, 1);
+                        handleUpdate({ subtasks: newSubtasks });
+                      }}
+                    />
+                  ))}
+                  
+                  <button 
+                    onClick={() => {
+                      const now = new Date().toISOString();
+                      const newSubtask: Task = {
+                        id: `subtask-${Date.now()}`,
+                        title: '',
+                        completed: false,
+                        priority: 'none',
+                        userId: activeTask.userId,
+                        workspaceId: activeTask.workspaceId,
+                        createdAt: now,
+                        updatedAt: now,
+                        position: (activeTask.subtasks?.length || 0),
+                      };
+                      handleUpdate({ subtasks: [...(activeTask.subtasks || []), newSubtask] });
+                    }}
+                    className="flex items-center gap-2 text-sm text-zinc-400 hover:text-indigo-500 transition-colors py-1 px-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900/50 w-full"
+                  >
+                    <Plus size={14} /> Add subtask
+                  </button>
+                </div>
+              </div>
+
               {/* Description */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Description</label>
@@ -182,6 +242,7 @@ export function TaskDetail({ task, isOpen, onClose, onUpdate, onDelete, suggesti
                   className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-300 focus:ring-2 focus:ring-indigo-500 transition-all outline-none resize-none min-h-[200px] text-base leading-relaxed placeholder-zinc-400"
                 />
               </div>
+
             </div>
 
             {/* Footer */}

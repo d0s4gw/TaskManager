@@ -78,4 +78,22 @@ export class TaskDetailPage {
     this.page.once('dialog', (dialog) => dialog.accept());
     await this.deleteButton.click();
   }
+
+  async addSubtask() {
+    await this.panel.getByText('Add subtask').click();
+  }
+
+  async editSubtaskTitle(oldTitle: string, newTitle: string) {
+    const subtask = this.panel.getByText(oldTitle || 'Untitled Subtask');
+    await subtask.click();
+    const input = this.panel.locator('input[value="' + oldTitle + '"], input:focus');
+    await input.fill(newTitle);
+    await input.press('Enter');
+  }
+
+  async toggleSubtask(title: string) {
+    const subtaskRow = this.panel.locator('.group').filter({ hasText: title });
+    await subtaskRow.locator('button').first().click();
+  }
+
 }

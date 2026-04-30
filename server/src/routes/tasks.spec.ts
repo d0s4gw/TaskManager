@@ -136,6 +136,42 @@ describe('Task Routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.title).toBe('New');
     });
+    
+    it('should allow updating nested subtasks', async () => {
+      const existingTask = { id: '1', title: 'Old', userId: 'test-user-id', workspaceId: 'ws1' };
+      mockGetById.mockResolvedValue(existingTask);
+      mockWsGetById.mockResolvedValue({ id: 'ws1', memberIds: ['test-user-id'] });
+      mockUpdate.mockResolvedValue(undefined);
+
+      const subtasks = [
+        {
+          id: 'sub1',
+          title: 'Sub 1',
+          completed: false,
+          subtasks: [
+            { id: 'subsub1', title: 'Deep', completed: true }
+          ]
+        }
+      ];
+
+      const res = await request(app)
+        .put('/api/tasks/1')
+        .set('Authorization', 'Bearer fake-token')
+        .send({ subtasks });
+
+      expect(res.status).toBe(200);
+      expect(mockUpdate).toHaveBeenCalledWith('1', expect.objectContaining({
+        subtasks: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'sub1',
+            subtasks: expect.arrayContaining([
+              expect.objectContaining({ id: 'subsub1' })
+            ])
+          })
+        ])
+      }));
+    });
+
 
     it('should return 403 if user is not in workspace', async () => {
       const existingTask = { id: '1', userId: 'other-user', workspaceId: 'ws1' };

@@ -8,7 +8,8 @@
 - **No Side Effects**: This directory MUST NOT contain any executable logic or side effects. It is for **declarations and schemas only**.
 - **Platform Agnostic**: Do not import any Node-specific (e.g., `fs`, `crypto`) or Browser-specific (e.g., `window`, `document`) APIs here.
 - **Dependency Minimalism**: Keep dependencies to a absolute minimum (ideally only `zod`). 
-- **Zod Patterns**: Use `z.infer<typeof schema>` to export types. Do not define manual interfaces for data that is already covered by a Zod schema.
+- **Zod Patterns**: Use `z.infer<typeof schema>` to export types. Do not define manual interfaces for data that is already covered by a Zod schema. Use `z.lazy(() => schema)` for recursive data structures (e.g., nested subtasks).
+
 
 ## 🔄 Change Propagation
 - **Protocol First**: If you are adding a new feature that involves data, you **MUST** update the schemas in this directory before touching the server or web code.

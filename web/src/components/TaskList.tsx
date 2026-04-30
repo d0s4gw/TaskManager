@@ -101,7 +101,14 @@ function SortableItem({ task, onToggle, onDelete, onSelectTask, index }: Sortabl
                 {new Date(task.dueDate).toLocaleDateString()}
               </span>
             )}
+            {task.subtasks && task.subtasks.length > 0 && (
+              <span className="text-[10px] font-bold text-indigo-500 flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800/50">
+                <CheckCircle2 size={10} />
+                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+              </span>
+            )}
           </div>
+
         )}
       </div>
 

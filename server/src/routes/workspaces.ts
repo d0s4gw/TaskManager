@@ -6,9 +6,11 @@ import { ITaskRepository, TaskRepository } from '../repositories/task.repository
 import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
 import { InProcessWorkspaceRepository } from '../repositories/in-process-workspace.repository';
 import { InProcessInvitationRepository } from '../repositories/in-process-invitation.repository';
-import { UserRepository } from '../repositories/user.repository';
+// UserRepository import removed
+
 import { createWorkspaceSchema, inviteMemberSchema } from '@shared/validation';
-import { APIResponse } from '@shared/api';
+// Unused APIResponse removed
+
 import { Workspace } from '@shared/workspace';
 import { Invitation } from '@shared/invitation';
 import logger from '../logger';
@@ -60,7 +62,8 @@ if (useMockRepo) {
   taskRepository = new TaskRepository();
 }
 
-const userRepository = new UserRepository();
+// userRepository removed
+
 
 router.use(verifyToken);
 
