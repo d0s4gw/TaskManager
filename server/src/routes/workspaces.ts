@@ -9,7 +9,8 @@ import { InProcessInvitationRepository } from '../repositories/in-process-invita
 // UserRepository import removed
 
 import { createWorkspaceSchema, inviteMemberSchema } from '@shared/validation';
-// Unused APIResponse removed
+import { APIResponse } from '@shared/api';
+
 
 import { Workspace } from '@shared/workspace';
 import { Invitation } from '@shared/invitation';

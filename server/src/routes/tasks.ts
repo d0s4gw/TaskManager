@@ -4,7 +4,8 @@ import { ITaskRepository, TaskRepository } from '../repositories/task.repository
 import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
 import { IWorkspaceRepository, WorkspaceRepository } from '../repositories/workspace.repository';
 import { InProcessWorkspaceRepository } from '../repositories/in-process-workspace.repository';
-// Unused shared DTOs and APIResponse removed
+// Unused shared DTOs removed
+import { APIResponse } from '@shared/api';
 
 import { createTaskSchema, updateTaskSchema } from '@shared/validation';
 import logger from '../logger';
