@@ -151,7 +151,7 @@ export function NestedTaskItem({ task, level, onUpdate, onDelete }: NestedTaskIt
       )}
 
       {isExpanded && task.subtasks && task.subtasks.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-1 ml-6">
           {task.subtasks.map((child, index) => (
             <NestedTaskItem 
               key={child.id}

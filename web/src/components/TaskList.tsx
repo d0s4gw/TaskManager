@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { CheckCircle2, Circle, Trash2, Calendar, GripVertical } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Calendar, GripVertical, ChevronRight, ChevronDown } from 'lucide-react';
 import { Task, UpdateTaskDTO } from '../../../shared/task';
 import { stringToColorClass } from '../lib/colors';
 import { NestedTaskItem } from './NestedTaskItem';
@@ -29,6 +29,8 @@ interface SortableItemProps {
 }
 
 function SortableItem({ task, onToggle, onDelete, onUpdate, onSelectTask, index }: SortableItemProps & { index: number }) {
+  const [isExpanded, setIsExpanded] = React.useState(true);
+
   const {
     attributes,
     listeners,
@@ -129,9 +131,21 @@ function SortableItem({ task, onToggle, onDelete, onUpdate, onSelectTask, index 
         >
           <Trash2 size={18} />
         </button>
+
+        {task.subtasks && task.subtasks.length > 0 && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900"
+          >
+            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+          </button>
+        )}
       </div>
 
-      {task.subtasks && task.subtasks.length > 0 && (
+      {isExpanded && task.subtasks && task.subtasks.length > 0 && (
         <div className="px-4 pb-4 ml-8 border-l border-zinc-100 dark:border-zinc-800/50 space-y-1">
           {task.subtasks.map((subtask, subIndex) => (
             <NestedTaskItem
