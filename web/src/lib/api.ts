@@ -1,6 +1,7 @@
 import { Task, CreateTaskDTO } from '../../../shared/task';
 import { Workspace, CreateWorkspaceDTO } from '../../../shared/workspace';
 import { APIResponse } from '../../../shared/api';
+import { UserStats } from '../../../shared/gamification';
 import { db, appCheck } from './firebase';
 import { getToken } from 'firebase/app-check';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
@@ -164,5 +165,11 @@ export class TaskApi {
     await this.request<void>(`/workspaces/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async getStats(): Promise<UserStats> {
+    const res = await this.request<UserStats>('/stats');
+    if (!res.data) throw new Error('No data returned');
+    return res.data;
   }
 }

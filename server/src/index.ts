@@ -35,6 +35,7 @@ if (!admin.apps.length) {
 
 import taskRoutes from './routes/tasks';
 import workspaceRoutes from './routes/workspaces';
+import statsRoutes from './routes/stats';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 
@@ -74,6 +75,7 @@ app.use(expressWinston.logger({
 // Task Routes
 app.use('/api/tasks', taskRoutes);
 app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {

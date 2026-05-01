@@ -45,6 +45,17 @@ export const updateTaskSchema = z.object({
 
 export type CreateTaskDTO = z.infer<typeof createTaskSchema>;
 export type UpdateTaskDTO = z.infer<typeof updateTaskSchema>;
+export const userStatsSchema = z.object({
+  userId: z.string(),
+  points: z.number().min(0),
+  level: z.number().min(1),
+  streakDays: z.number().min(0),
+  lastCompletionDate: z.string().optional(),
+  totalTasksCompleted: z.number().min(0),
+  updatedAt: z.string(),
+});
+
+export type UserStatsDTO = z.infer<typeof userStatsSchema>;
 
 
 export const createWorkspaceSchema = z.object({

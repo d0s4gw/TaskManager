@@ -4,6 +4,9 @@ import { ITaskRepository, TaskRepository } from '../repositories/task.repository
 import { InProcessTaskRepository } from '../repositories/in-process-task.repository';
 import { IWorkspaceRepository, WorkspaceRepository } from '../repositories/workspace.repository';
 import { InProcessWorkspaceRepository } from '../repositories/in-process-workspace.repository';
+import { IUserStatsRepository, UserStatsRepository } from '../repositories/user-stats.repository';
+import { InProcessUserStatsRepository } from '../repositories/in-process-user-stats.repository';
+import { GamificationService } from '../services/gamification.service';
 // Unused shared DTOs removed
 import { APIResponse } from '@shared/api';
 
@@ -18,17 +21,24 @@ const router = Router();
 const useMockRepo = process.env.NODE_ENV === 'development';
 let taskRepository: ITaskRepository;
 let workspaceRepository: IWorkspaceRepository;
+let userStatsRepository: IUserStatsRepository;
+
 
 if (useMockRepo) {
   const mockRepo = new InProcessTaskRepository();
   mockRepo.seed('e2e-user-123');
   taskRepository = mockRepo;
   workspaceRepository = new InProcessWorkspaceRepository();
+  const mockStatsRepo = InProcessUserStatsRepository.getInstance();
+  mockStatsRepo.seed('e2e-user-123');
+  userStatsRepository = mockStatsRepo;
   logger.info('Using In-Memory Task & Workspace Repositories (Seeded)');
 } else {
   taskRepository = new TaskRepository();
   workspaceRepository = new WorkspaceRepository();
+  userStatsRepository = new UserStatsRepository();
 }
+const gamificationService = new GamificationService(userStatsRepository);
 
 // Apply auth middleware to all task routes
 router.use(verifyToken);
@@ -63,7 +73,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     }
     
     logger.info('Fetched tasks', { userId, workspaceId, count: tasks.length });
-    const response: APIResponse<any> = {
+    const response: APIResponse<Task[]> = {
       success: true,
       data: tasks,
     };
@@ -110,7 +120,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     });
 
 
-    const response: APIResponse<any> = {
+    const response: APIResponse<Task> = {
       success: true,
       data: newTask,
     };
@@ -121,7 +131,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         success: false, 
         error: { 
           message: 'Validation Failed', 
-          details: error.issues.map((e: any) => ({ path: e.path, message: e.message }))
+          details: error.issues.map((e) => ({ path: e.path, message: e.message }))
         } 
       });
     }
@@ -178,11 +188,28 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 
 
     await taskRepository.update(id as string, updatedTask);
-    const finalTask = { ...existingTask, ...updatedTask };
 
-    const response: APIResponse<any> = {
+    // Award points if task was just completed
+    if (completed === true && existingTask.completed === false) {
+      await gamificationService.awardPoints(userId, 'task');
+    }
+
+    // Award points for subtask completions
+    if (subtasks && existingTask.subtasks) {
+      const newlyCompletedSubtasks = subtasks.filter((newSub: Task) => {
+        const oldSub = existingTask.subtasks?.find((old: Task) => old.id === newSub.id);
+        return newSub.completed === true && (!oldSub || oldSub.completed === false);
+      });
+      
+      for (const _ of newlyCompletedSubtasks) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        await gamificationService.awardPoints(userId, 'subtask');
+      }
+    }
+
+    const response: APIResponse<Task> = {
       success: true,
-      data: finalTask,
+      data: { ...existingTask, ...updatedTask } as Task,
     };
     res.json(response);
   } catch (error) {
@@ -192,7 +219,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         success: false, 
         error: { 
           message: 'Validation Failed', 
-          details: error.issues.map((e: any) => ({ path: e.path, message: e.message }))
+          details: error.issues.map((e) => ({ path: e.path, message: e.message }))
         } 
       });
     }
@@ -236,7 +263,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
         success: false, 
         error: { 
           message: 'Validation Failed', 
-          details: error.issues.map((e: any) => ({ path: e.path, message: e.message }))
+          details: error.issues.map((e) => ({ path: e.path, message: e.message }))
         } 
       });
     }

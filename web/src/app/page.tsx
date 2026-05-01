@@ -12,6 +12,8 @@ import { Workspace, WorkspaceRole } from "../../../shared/workspace";
 import { LogOut, Loader2, Menu, X } from "lucide-react";
 import { TaskApi } from "@/lib/api";
 import Image from "next/image";
+import confetti from 'canvas-confetti';
+import { StatsHeader } from "@/components/StatsHeader";
 import {
   DndContext,
   closestCenter,
@@ -142,6 +144,16 @@ export default function Home() {
       setSelectedTask(prev => prev ? { ...prev, ...updates } : null);
     }
 
+    // Trigger confetti on completion
+    if (updates.completed === true) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#818cf8', '#c7d2fe']
+      });
+    }
+
     try {
       await getApi().updateTask(id, updates);
     } catch {
@@ -223,9 +235,9 @@ export default function Home() {
             </div>
             <span className="font-semibold text-zinc-900 dark:text-white tracking-tight">TaskManager</span>
           </div>
-          
           {user ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
+              <StatsHeader />
               <div className="hidden sm:flex items-center gap-3">
                 <Image 
                   src={user.photoURL || "https://ui-avatars.com/api/?name=" + (user.displayName || "User")} 

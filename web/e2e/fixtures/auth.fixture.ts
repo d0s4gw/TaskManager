@@ -184,10 +184,30 @@ function createWorkspaceStore() {
   };
 }
 
+function createStatsStore() {
+  const stats = {
+    points: 120,
+    level: 2,
+    streakDays: 5,
+    totalTasksCompleted: 12,
+    lastCompletionDate: new Date().toISOString(),
+  };
+
+  return {
+    get: () => ({ ...stats, userId: MOCK_USER.uid, id: MOCK_USER.uid, updatedAt: new Date().toISOString() }),
+    awardPoints: (type: 'task' | 'subtask') => {
+      stats.points += type === 'task' ? 10 : 2;
+      stats.totalTasksCompleted += 1;
+      stats.level = Math.floor(stats.points / 100) + 1;
+    }
+  };
+}
+
 async function mockApi(
   page: Page,
   taskStore: ReturnType<typeof createTaskStore>,
-  workspaceStore: ReturnType<typeof createWorkspaceStore>
+  workspaceStore: ReturnType<typeof createWorkspaceStore>,
+  statsStore: ReturnType<typeof createStatsStore>
 ) {
   await page.route('**/api/tasks**', async (route, request) => {
     const url = new URL(request.url());
@@ -227,7 +247,23 @@ async function mockApi(
     if (id !== 'tasks') {
       if (request.method() === 'PUT') {
         const body = request.postDataJSON();
+        const oldTask = taskStore.getAll().find(t => t.id === id);
         taskStore.update(id, body);
+        
+        // Award points if task was just completed
+        if (body.completed === true && oldTask && !oldTask.completed) {
+          statsStore.awardPoints('task');
+        }
+        
+        // Award points for subtask completions
+        if (body.subtasks && oldTask && oldTask.subtasks) {
+          const newlyCompleted = body.subtasks.filter((newSub: Task) => {
+            const oldSub = oldTask.subtasks?.find((old: Task) => old.id === newSub.id);
+            return newSub.completed === true && (!oldSub || !oldSub.completed);
+          });
+          newlyCompleted.forEach(() => statsStore.awardPoints('subtask'));
+        }
+
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -327,6 +363,22 @@ async function mockApi(
 
     return route.continue();
   });
+
+  // Mock Stats API
+  await page.route('**/api/stats**', async (route, request) => {
+    if (request.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: statsStore.get(),
+          metadata: { timestamp: new Date().toISOString() },
+        }),
+      });
+    }
+    return route.continue();
+  });
 }
 
 // ---------- Exported Test Fixtures ----------
@@ -338,6 +390,8 @@ type AuthFixtures = {
   taskStore: ReturnType<typeof createTaskStore>;
   /** The in-memory workspace store backing the mock API for this test. */
   workspaceStore: ReturnType<typeof createWorkspaceStore>;
+  /** The in-memory stats store backing the mock API for this test. */
+  statsStore: ReturnType<typeof createStatsStore>;
 };
 
 export const test = base.extend<AuthFixtures>({
@@ -353,7 +407,13 @@ export const test = base.extend<AuthFixtures>({
     await use(store);
   },
 
-  authenticatedPage: async ({ page, taskStore, workspaceStore }, use) => {
+  statsStore: async ({}, use) => {
+    const store = createStatsStore();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    await use(store);
+  },
+
+  authenticatedPage: async ({ page, taskStore, workspaceStore, statsStore }, use) => {
     // 1. Mock Firebase auth endpoints
     await mockFirebaseAuth(page);
 
@@ -361,7 +421,7 @@ export const test = base.extend<AuthFixtures>({
     await injectMockUser(page);
 
     // 3. Mock the Task and Workspace API
-    await mockApi(page, taskStore, workspaceStore);
+    await mockApi(page, taskStore, workspaceStore, statsStore);
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     page.on("request", r => console.log("[REQ]", r.method(), r.url())); await use(page);
