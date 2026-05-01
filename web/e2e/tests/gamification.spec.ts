@@ -13,7 +13,7 @@ test.describe('Gamification Engine', () => {
     // Check initial points from mockStore
     const initialStats = statsStore.get();
     await expect(authenticatedPage.getByText(`Level ${initialStats.level}`)).toBeVisible();
-    await expect(authenticatedPage.getByText(`${initialStats.streakDays}`)).toBeVisible();
+    await expect(authenticatedPage.getByText(`${initialStats.streakDays}`, { exact: true })).toBeVisible();
   });
 
   test('increments points and level when a task is completed', async ({ authenticatedPage, statsStore }) => {
