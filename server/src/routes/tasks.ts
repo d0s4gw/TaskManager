@@ -11,6 +11,7 @@ import { GamificationService } from '../services/gamification.service';
 import { APIResponse } from '@shared/api';
 
 import { createTaskSchema, updateTaskSchema } from '@shared/validation';
+import { Task } from '@shared/task';
 import logger from '../logger';
 import { ZodError } from 'zod';
 
