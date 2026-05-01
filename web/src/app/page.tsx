@@ -368,6 +368,7 @@ export default function Home() {
                   tasks={tasks} 
                   onToggle={handleToggleTask} 
                   onDelete={handleDeleteTask} 
+                  onUpdate={handleUpdateTask}
                   onSelectTask={(task) => setSelectedTask(task)}
                 />
               </DndContext>

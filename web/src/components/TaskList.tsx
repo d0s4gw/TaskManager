@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { CheckCircle2, Circle, Trash2, Calendar, GripVertical } from 'lucide-react';
-import { Task } from '../../../shared/task';
+import { Task, UpdateTaskDTO } from '../../../shared/task';
 import { stringToColorClass } from '../lib/colors';
+import { NestedTaskItem } from './NestedTaskItem';
 import {
   useSortable,
   SortableContext,
@@ -15,6 +16,7 @@ interface TaskListProps {
   tasks: Task[];
   onToggle: (id: string, completed: boolean) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUpdate: (id: string, updates: UpdateTaskDTO) => Promise<void>;
   onSelectTask: (task: Task) => void;
 }
 
@@ -22,10 +24,11 @@ interface SortableItemProps {
   task: Task;
   onToggle: (id: string, completed: boolean) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUpdate: (id: string, updates: UpdateTaskDTO) => Promise<void>;
   onSelectTask: (task: Task) => void;
 }
 
-function SortableItem({ task, onToggle, onDelete, onSelectTask, index }: SortableItemProps & { index: number }) {
+function SortableItem({ task, onToggle, onDelete, onUpdate, onSelectTask, index }: SortableItemProps & { index: number }) {
   const {
     attributes,
     listeners,
@@ -46,89 +49,114 @@ function SortableItem({ task, onToggle, onDelete, onSelectTask, index }: Sortabl
       ref={setNodeRef}
       style={style}
       data-testid={`task-item-${index}`}
-      className={`group relative flex items-center gap-4 p-4 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all hover:shadow-md hover:border-indigo-500/30 dark:hover:border-indigo-400/30 ${isDragging ? 'shadow-xl scale-[1.02] border-indigo-500 bg-white dark:bg-zinc-800 z-50' : ''}`}
-      onClick={() => onSelectTask(task)}
+      className={`group relative flex flex-col bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all hover:shadow-md hover:border-indigo-500/30 dark:hover:border-indigo-400/30 ${isDragging ? 'shadow-xl scale-[1.02] border-indigo-500 bg-white dark:bg-zinc-800 z-50' : ''}`}
     >
-      <button 
-        {...attributes}
-        {...listeners}
-        aria-label="Drag to reorder"
-        className="cursor-grab active:cursor-grabbing text-zinc-300 dark:text-zinc-700 hover:text-zinc-500 transition-colors p-1"
-        onClick={(e) => e.stopPropagation()}
+      <div 
+        className="flex items-center gap-4 p-4 cursor-pointer"
+        onClick={() => onSelectTask(task)}
       >
-        <GripVertical size={18} />
-      </button>
+        <button 
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder"
+          className="cursor-grab active:cursor-grabbing text-zinc-300 dark:text-zinc-700 hover:text-zinc-500 transition-colors p-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical size={18} />
+        </button>
 
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle(task.id, !task.completed);
-        }}
-        aria-label={task.completed ? "Mark as incomplete" : "Mark as complete"}
-        className={`transition-colors ${task.completed ? 'text-green-500' : 'text-zinc-300 dark:text-zinc-700 hover:text-indigo-500'}`}
-      >
-        {task.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
-      </button>
-      
-      <div className="flex-1 min-w-0">
-        <h3 className={`font-medium truncate ${task.completed ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-white'}`}>
-          {task.title}
-        </h3>
-        {task.description && (
-          <p className={`text-sm mt-0.5 line-clamp-2 ${task.completed ? 'text-zinc-400/70' : 'text-zinc-500 dark:text-zinc-400'}`}>
-            {task.description}
-          </p>
-        )}
-        {(task.priority !== 'none' || task.dueDate || (task.labels && task.labels.length > 0)) && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {task.labels?.map(label => (
-              <span key={label} className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${stringToColorClass(label)}`}>
-                {label}
-              </span>
-            ))}
-            {task.priority !== 'none' && (
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-transparent ${
-                task.priority === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
-                task.priority === 'medium' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
-                'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
-              }`}>
-                {task.priority}
-              </span>
-            )}
-            {task.dueDate && (
-              <span className="text-[10px] font-medium text-zinc-400 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/50 px-2 py-0.5 rounded-full">
-                <Calendar size={10} />
-                {new Date(task.dueDate).toLocaleDateString()}
-              </span>
-            )}
-            {task.subtasks && task.subtasks.length > 0 && (
-              <span className="text-[10px] font-bold text-indigo-500 flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800/50">
-                <CheckCircle2 size={10} />
-                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
-              </span>
-            )}
-          </div>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(task.id, !task.completed);
+          }}
+          aria-label={task.completed ? "Mark as incomplete" : "Mark as complete"}
+          className={`transition-colors ${task.completed ? 'text-green-500' : 'text-zinc-300 dark:text-zinc-700 hover:text-indigo-500'}`}
+        >
+          {task.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
+        </button>
+        
+        <div className="flex-1 min-w-0">
+          <h3 className={`font-medium truncate ${task.completed ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-white'}`}>
+            {task.title}
+          </h3>
+          {task.description && (
+            <p className={`text-sm mt-0.5 line-clamp-1 ${task.completed ? 'text-zinc-400/70' : 'text-zinc-500 dark:text-zinc-400'}`}>
+              {task.description}
+            </p>
+          )}
+          {(task.priority !== 'none' || task.dueDate || (task.labels && task.labels.length > 0)) && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {task.labels?.map(label => (
+                <span key={label} className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${stringToColorClass(label)}`}>
+                  {label}
+                </span>
+              ))}
+              {task.priority !== 'none' && (
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-transparent ${
+                  task.priority === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
+                  task.priority === 'medium' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
+                  'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
+                }`}>
+                  {task.priority}
+                </span>
+              )}
+              {task.dueDate && (
+                <span className="text-[10px] font-medium text-zinc-400 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/50 px-2 py-0.5 rounded-full">
+                  <Calendar size={10} />
+                  {new Date(task.dueDate).toLocaleDateString()}
+                </span>
+              )}
+              {task.subtasks && task.subtasks.length > 0 && (
+                <span className="text-[10px] font-bold text-indigo-500 flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800/50">
+                  <CheckCircle2 size={10} />
+                  {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
-        )}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm('Are you sure you want to delete this task?')) {
+              onDelete(task.id);
+            }
+          }}
+          aria-label="Delete task"
+          className="opacity-0 group-hover:opacity-100 p-2 text-zinc-400 hover:text-red-500 transition-all rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30"
+        >
+          <Trash2 size={18} />
+        </button>
       </div>
 
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          if (window.confirm('Are you sure you want to delete this task?')) {
-            onDelete(task.id);
-          }
-        }}
-        aria-label="Delete task"
-        className="opacity-0 group-hover:opacity-100 p-2 text-zinc-400 hover:text-red-500 transition-all rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30"
-      >
-        <Trash2 size={18} />
-      </button>
+      {task.subtasks && task.subtasks.length > 0 && (
+        <div className="px-4 pb-4 ml-8 border-l border-zinc-100 dark:border-zinc-800/50 space-y-1">
+          {task.subtasks.map((subtask, subIndex) => (
+            <NestedTaskItem
+              key={subtask.id}
+              task={subtask}
+              level={1}
+              onUpdate={(updatedSubtask) => {
+                const newSubtasks = [...(task.subtasks || [])];
+                newSubtasks[subIndex] = updatedSubtask;
+                onUpdate(task.id, { subtasks: newSubtasks });
+              }}
+              onDelete={() => {
+                const newSubtasks = [...(task.subtasks || [])];
+                newSubtasks.splice(subIndex, 1);
+                onUpdate(task.id, { subtasks: newSubtasks });
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-export function TaskList({ tasks, onToggle, onDelete, onSelectTask }: TaskListProps) {
+export function TaskList({ tasks, onToggle, onDelete, onUpdate, onSelectTask }: TaskListProps) {
   if (tasks.length === 0) {
     return (
       <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/30 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
@@ -151,6 +179,7 @@ export function TaskList({ tasks, onToggle, onDelete, onSelectTask }: TaskListPr
             index={index}
             onToggle={onToggle} 
             onDelete={onDelete} 
+            onUpdate={onUpdate}
             onSelectTask={onSelectTask}
           />
         ))}
