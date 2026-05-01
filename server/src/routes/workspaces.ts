@@ -9,9 +9,6 @@ import { InProcessInvitationRepository } from '../repositories/in-process-invita
 // UserRepository import removed
 
 import { createWorkspaceSchema, inviteMemberSchema } from '@shared/validation';
-import { APIResponse } from '@shared/api';
-
-
 import { Workspace } from '@shared/workspace';
 import { Invitation } from '@shared/invitation';
 import logger from '../logger';
@@ -143,7 +140,7 @@ router.post('/:id/invite', async (req: AuthRequest, res: Response) => {
       workspaceId,
       workspaceName: workspace.name,
       email,
-      role: role as any,
+      role,
       token: crypto.randomBytes(32).toString('hex'),
       inviterId: userId,
       inviterName: req.user?.name || 'Unknown User',

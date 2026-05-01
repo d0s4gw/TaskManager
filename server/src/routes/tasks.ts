@@ -7,7 +7,6 @@ import { InProcessWorkspaceRepository } from '../repositories/in-process-workspa
 import { IUserStatsRepository, UserStatsRepository } from '../repositories/user-stats.repository';
 import { InProcessUserStatsRepository } from '../repositories/in-process-user-stats.repository';
 import { GamificationService } from '../services/gamification.service';
-// Unused shared DTOs removed
 import { APIResponse } from '@shared/api';
 
 import { createTaskSchema, updateTaskSchema } from '@shared/validation';
@@ -120,7 +119,6 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       labels: labels || [],
     });
 
-
     const response: APIResponse<Task> = {
       success: true,
       data: newTask,
@@ -153,7 +151,6 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     const id = req.params.id as string;
     
     if (!userId) {
-
       return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
     }
 
@@ -171,7 +168,6 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     const validatedData = updateTaskSchema.parse(req.body);
     const { title, description, completed, priority, dueDate, category, position, labels, subtasks } = validatedData;
 
-    
     const updatedTask: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
@@ -185,8 +181,6 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     if (position !== undefined) updatedTask.position = position;
     if (labels !== undefined) updatedTask.labels = labels;
     if (subtasks !== undefined) updatedTask.subtasks = subtasks;
-
-
 
     await taskRepository.update(id as string, updatedTask);
 
@@ -202,8 +196,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         return newSub.completed === true && (!oldSub || oldSub.completed === false);
       });
       
-      for (const _ of newlyCompletedSubtasks) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for (let i = 0; i < newlyCompletedSubtasks.length; i++) {
         await gamificationService.awardPoints(userId, 'subtask');
       }
     }
@@ -233,7 +226,6 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     });
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
-
 });
 
 // Delete a task
@@ -278,6 +270,5 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
   }
 });
-
 
 export default router;

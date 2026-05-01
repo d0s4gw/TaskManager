@@ -85,7 +85,7 @@ test.describe('Workspaces & Collaboration', () => {
     await acceptButton.click();
     
     // Success message - should appear after API call
-    await expect(page.getByText('Welcome aboard!'), { timeout: 15000 }).toBeVisible();
+    await expect(page.getByText('Welcome aboard!')).toBeVisible({ timeout: 15000 });
     
     // Redirection to dashboard
     await expect(page).toHaveURL(/\/$/, { timeout: 10000 });

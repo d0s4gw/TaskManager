@@ -18,3 +18,8 @@
 - **Rate Limit**: 1000 req / 15 min per IP.
 - **Logging**: Use `logger.info({ requestId: req.requestId, ... })`.
 - **ID Generation**: Use `crypto.randomUUID()` for new entity IDs.
+
+## 🏆 Gamification
+- **Service**: `GamificationService` awards points on task/subtask completion. Uses `IUserStatsRepository`.
+- **Stats Route**: `/api/stats` (GET) returns user stats. Uses `InProcessUserStatsRepository` in dev.
+- **Shared Types**: `shared/gamification.ts` defines `UserStats`, `LEVEL_MAP`, and helper functions.

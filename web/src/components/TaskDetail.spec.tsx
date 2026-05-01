@@ -11,6 +11,7 @@ const mockTask: Task = {
   priority: 'low',
   dueDate: new Date('2026-12-31').toISOString(),
   userId: 'u1',
+  workspaceId: 'ws-1',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   position: 0,

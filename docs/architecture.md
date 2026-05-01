@@ -26,6 +26,11 @@
 ## Persistence Layer (Firestore)
 - **Mode**: Native Mode.
 - **Data Model**: Organized around **Workspaces**. Every user has a default "Personal Workspace," and can create/join additional shared workspaces.
+- **Collections**:
+  - `tasks` — Task documents with optional recursive `subtasks` array and `labels` string array.
+  - `workspaces` — Workspace documents with `members` and `memberIds` arrays.
+  - `invitations` — Pending, accepted, or expired invitations with token-based lookup.
+  - `user_stats` — Gamification data: points, level, streakDays, totalTasksCompleted per user.
 - **Indexes**: Composite indexes are managed via Terraform and `firestore.indexes.json`.
   - Required: `tasks` collection - `workspaceId` (ASC) + `position` (ASC/DESC).
 - **Access**: Restricted to the `task-manager-server` service account via IAM.
@@ -44,5 +49,5 @@
 ## Testing Strategy
 - **Logic Tier**: Jest-based unit and integration tests with repository mocking.
 - **Web Tier (Unit)**: Vitest for component logic and build integrity checks.
-- **Web Tier (E2E)**: Playwright tests covering auth flows, Workspace lifecycle, and CRUD operations.
+- **Web Tier (E2E)**: Playwright tests covering auth flows, Workspace lifecycle, CRUD operations, subtask management, and gamification stat tracking.
 - **Infrastructure**: Terraform `fmt -check` and `validate` run in CI on every push.

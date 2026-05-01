@@ -17,6 +17,8 @@
 ## 🏗️ Architecture Highlights
 - **Workspace Management**: Multi-user support via shared workspaces and personal workspace auto-provisioning.
 - **Recursive Subtasks**: Infinite nesting support for task hierarchies with real-time progress tracking (e.g., "2/5 completed") visible across the list and detail views.
+- **Labels**: Free-text tagging system with deterministic color mapping. Up to 10 labels per task.
+- **Gamification**: Points, levels, and streak tracking. Task and subtask completions award XP with confetti celebrations. Stats displayed in a persistent header widget.
 - **Observability**: Structured JSON logging across all tiers for native Google Cloud Logging integration. Request-ID correlation enables cross-service debugging.
 
 - **Stateless Logic**: Scalable, containerized backend optimized for cold-start performance.
@@ -60,7 +62,7 @@ For AI agents or rapid local testing, you can bypass the manual Google Login by 
 - **Full Suite**: `npm test` from the root (runs all workspaces).
 - **Server**: `npm test --workspace server`
 - **Web (Unit)**: `npm test --workspace web`
-- **Web (E2E)**: `npm run test:e2e --workspace web`
+- **Web (E2E)**: `npm run test:e2e --workspace web` (covers auth, workspaces, CRUD, subtasks, gamification)
 
 ---
 

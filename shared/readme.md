@@ -6,8 +6,12 @@ This directory contains the 'source of truth' for TypeScript interfaces and sche
 
 - `user.ts`: User profile and identity schemas.
 - `task.ts`: Task data models and DTOs (inferred from validation schemas).
-- `validation.ts`: Shared Zod validation schemas for all CRUD operations.
+- `validation.ts`: Shared Zod validation schemas for all CRUD operations (tasks, workspaces, invitations, user stats).
 - `api.ts`: Standardized API request/response envelopes.
+- `workspace.ts`: Workspace, WorkspaceMember, and WorkspaceRole types.
+- `invitation.ts`: Invitation types and status definitions.
+- `gamification.ts`: UserStats interface, LEVEL_MAP constants, and pure helper functions (calculateLevel, getProgressToNextLevel).
+- `dependency.ts`: Dependency interface for task relationships.
 
 ## Usage
 

@@ -20,8 +20,8 @@ export function StatsHeader() {
       try {
         const data = await api.getStats();
         setStats(data);
-      } catch (err) {
-        console.error("Failed to fetch stats", err);
+      } catch {
+        // Silently ignore — stats are non-critical UI enhancement
       } finally {
         setIsLoading(false);
       }
@@ -49,7 +49,7 @@ export function StatsHeader() {
         <div className="flex flex-col gap-1 w-24 sm:w-32">
           <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">
             <span>Level {stats.level}</span>
-            <span>{progress}%</span>
+            <span>{progress}/{LEVEL_MAP.POINTS_PER_LEVEL} XP</span>
           </div>
           <div className="h-1.5 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
             <div 

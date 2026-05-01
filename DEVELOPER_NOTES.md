@@ -8,6 +8,9 @@ This file contains critical patterns for the TaskManager project. For the histor
 - **Predictive UX**: Use the `PredictiveInput` component (or its patterns) for task titles to provide inline "ghost text" suggestions.
 - **Security by Default**: Every new endpoint in `server/` must be wrapped with the Firebase Auth middleware. No unauthenticated data access is permitted except for `/health`.
 - **Global Rate Limiting**: The server enforces a global rate limit of 1000 requests per 15 minutes per IP. This is configured in `server/src/index.ts`.
+- **Labels**: Free-text tags on tasks, stored as `string[]` (max 10 labels, max 20 chars each). Validated via Zod in `shared/validation.ts`. Rendered with deterministic color mapping via `web/src/lib/colors.ts`.
+- **Recursive Subtasks**: Tasks support infinite nesting via the `subtasks?: Task[]` field. The Zod schema uses `z.lazy()` for recursive validation. The web UI uses the `NestedTaskItem` component for recursive rendering.
+- **Gamification**: Points are awarded on task/subtask completion via `GamificationService`. Stats (points, level, streak) are stored in the `user_stats` Firestore collection and exposed via `/api/stats`. The `StatsHeader` component polls this endpoint.
 
 ## 🔐 Authentication & Security
 - **JWT Handling**: The backend validates tokens using `firebase-admin`. Clients must send the `Authorization: Bearer <ID_TOKEN>` header.
@@ -27,7 +30,7 @@ This file contains critical patterns for the TaskManager project. For the histor
 
 ## 🌐 Web (Next.js) Patterns
 - **API Proxy**: Use the `/api` prefix for all backend calls. Firebase Hosting rewrites proxy these calls to the Cloud Run server.
-- **Observability**: Use the structured `JSON` logger in `web/src/lib/logger.ts` for **all** logging. Do not use `console.error` or `console.log` in source files — the only exception is the build-time guard in `firebase.ts`.
+- **Observability**: Use the structured `JSON` logger in `web/src/lib/logger.ts` for **all** logging. Do not use `console.error` or `console.log` in source files — the only exception is the build-time guard in `firebase.ts`. Non-critical UI components (e.g., `StatsHeader`) should use silent catches rather than `console.error`.
 - **Firebase Initialization**: Firebase is initialized with a "build-aware" pattern in `web/src/lib/firebase.ts` to prevent build-time crashes when environment variables are missing. `getAuth()` is wrapped in a try/catch to support E2E testing without real credentials.
 - **E2E Testing**: Playwright tests use a `window.__E2E_MOCK_USER__` global to inject a mock Firebase user. The `AuthContext` checks for this global before calling `onAuthStateChanged`. When writing new E2E tests, import the custom `test` fixture from `e2e/fixtures/auth.fixture.ts` instead of `@playwright/test` to get an `authenticatedPage` with a pre-mocked user and API.
 - **Page Object Model**: E2E selectors are encapsulated in Page Object classes under `e2e/pages/`. When adding new UI components, add `data-testid` attributes and update the corresponding Page Object.

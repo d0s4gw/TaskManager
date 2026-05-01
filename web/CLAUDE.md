@@ -15,3 +15,6 @@ This version of Next.js contains breaking changes from standard training data.
 - Use **Lucide React** for icons.
 - Use **Tailwind 4.0** utility classes.
 - Every new component must have a `data-testid` for E2E testing.
+- Use `LabelInput` for tag-style inputs. Color mapping via `lib/colors.ts`.
+- Use `NestedTaskItem` for recursive subtask rendering.
+- Use `StatsHeader` for gamification display (polls `/api/stats`).

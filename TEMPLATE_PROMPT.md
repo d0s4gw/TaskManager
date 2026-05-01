@@ -1,4 +1,4 @@
-# TaskManager "BULLETPROOF SYSTEM BLUEPRINT" (v5.1)
+# TaskManager "BULLETPROOF SYSTEM BLUEPRINT" (v5.2)
 
 This document is the definitive source of truth for replicating the TaskManager architecture. It contains the **full source code** for every structural and infrastructure component of the system. 
 
@@ -147,12 +147,33 @@ export interface APIResponse<T> {
 ```typescript
 import { z } from 'zod';
 
+// Recursive schema for nested subtasks
+export const subtaskSchema: z.ZodType<any> = z.lazy(() => z.object({
+  id: z.string(),
+  title: z.string().max(100),
+  description: z.string().max(500).optional(),
+  completed: z.boolean(),
+  priority: z.enum(['none', 'low', 'medium', 'high']).optional(),
+  dueDate: z.string().datetime().optional().or(z.literal('')),
+  category: z.string().max(50).optional(),
+  labels: z.array(z.string().max(20)).max(10).optional(),
+  userId: z.string().optional(),
+  workspaceId: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  position: z.number().optional(),
+  subtasks: z.array(subtaskSchema).optional(),
+}));
+
 export const createTaskSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100),
   description: z.string().max(500).optional(),
   priority: z.enum(['none', 'low', 'medium', 'high']).optional(),
   dueDate: z.string().datetime().optional().or(z.literal('')),
   category: z.string().max(50).optional(),
+  labels: z.array(z.string().max(20)).max(10).optional(),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  subtasks: z.array(subtaskSchema).optional(),
 });
 
 export const updateTaskSchema = z.object({
@@ -162,11 +183,37 @@ export const updateTaskSchema = z.object({
   priority: z.enum(['none', 'low', 'medium', 'high']).optional(),
   dueDate: z.string().datetime().optional().or(z.literal('')),
   category: z.string().max(50).optional(),
+  labels: z.array(z.string().max(20)).max(10).optional(),
   position: z.number().optional(),
+  subtasks: z.array(subtaskSchema).optional(),
 });
 
 export type CreateTaskDTO = z.infer<typeof createTaskSchema>;
 export type UpdateTaskDTO = z.infer<typeof updateTaskSchema>;
+
+export const userStatsSchema = z.object({
+  userId: z.string(),
+  points: z.number().min(0),
+  level: z.number().min(1),
+  streakDays: z.number().min(0),
+  lastCompletionDate: z.string().optional(),
+  totalTasksCompleted: z.number().min(0),
+  updatedAt: z.string(),
+});
+
+export type UserStatsDTO = z.infer<typeof userStatsSchema>;
+
+export const createWorkspaceSchema = z.object({
+  name: z.string().min(1, 'Workspace name is required').max(50),
+});
+
+export const inviteMemberSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  role: z.enum(['owner', 'editor', 'viewer']).default('editor'),
+});
+
+export type CreateWorkspaceDTO = z.infer<typeof createWorkspaceSchema>;
+export type InviteMemberDTO = z.infer<typeof inviteMemberSchema>;
 ```
 
 ### 3. Server: Tracing (`server/src/tracing.ts`)
@@ -277,6 +324,10 @@ import { requestId } from './middleware/request-id';
 
 if (!admin.apps.length) { admin.initializeApp({ projectId: process.env.GOOGLE_CLOUD_PROJECT }); }
 
+import taskRoutes from './routes/tasks';
+import workspaceRoutes from './routes/workspaces';
+import statsRoutes from './routes/stats';
+
 const app = express();
 app.use(require('cors')({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
 app.use(express.json());
@@ -286,6 +337,10 @@ app.use(expressWinston.logger({
   winstonInstance: logger,
   dynamicMeta: (req) => ({ requestId: req.requestId }),
 }));
+
+app.use('/api/tasks', taskRoutes);
+app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/stats', statsRoutes);
 
 app.get('/health', (req, res) => res.json({ success: true, data: { status: 'healthy' } }));
 
@@ -435,7 +490,6 @@ resource "google_cloud_run_v2_service_iam_member" "public_access" {
 output "server_url" {
   value = google_cloud_run_v2_service.server.uri
 }
-```
 ```
 
 ---

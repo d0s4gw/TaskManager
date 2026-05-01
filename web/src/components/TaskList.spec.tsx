@@ -4,18 +4,18 @@ import { TaskList } from './TaskList';
 import { Task } from '../../../shared/task';
 
 const mockTasks: Task[] = [
-  { id: '1', title: 'Task 1', completed: false, userId: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), priority: 'high', position: 0 },
-  { id: '2', title: 'Task 2', completed: true, userId: 'u1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), priority: 'none', position: 1 },
+  { id: '1', title: 'Task 1', completed: false, userId: 'u1', workspaceId: 'ws-1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), priority: 'high', position: 0 },
+  { id: '2', title: 'Task 2', completed: true, userId: 'u1', workspaceId: 'ws-1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), priority: 'none', position: 1 },
 ];
 
 describe('TaskList', () => {
   it('renders "no tasks" message when list is empty', () => {
-    render(<TaskList tasks={[]} onToggle={vi.fn()} onDelete={vi.fn()} onSelectTask={vi.fn()} />);
+    render(<TaskList tasks={[]} onToggle={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} onSelectTask={vi.fn()} />);
     expect(screen.getByText(/No tasks yet/i)).toBeInTheDocument();
   });
 
   it('renders a list of tasks', () => {
-    render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={vi.fn()} onSelectTask={vi.fn()} />);
+    render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} onSelectTask={vi.fn()} />);
     expect(screen.getByText('Task 1')).toBeInTheDocument();
     expect(screen.getByText('Task 2')).toBeInTheDocument();
     expect(screen.getByText('high')).toBeInTheDocument(); // Priority badge
@@ -30,19 +30,20 @@ describe('TaskList', () => {
         description: 'This is a test description',
         completed: false, 
         userId: 'u1', 
+        workspaceId: 'ws-1',
         createdAt: new Date().toISOString(), 
         updatedAt: new Date().toISOString(), 
         priority: 'none', 
         position: 2 
       },
     ];
-    render(<TaskList tasks={tasksWithDescription} onToggle={vi.fn()} onDelete={vi.fn()} onSelectTask={vi.fn()} />);
+    render(<TaskList tasks={tasksWithDescription} onToggle={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} onSelectTask={vi.fn()} />);
     expect(screen.getByText('This is a test description')).toBeInTheDocument();
   });
 
   it('calls onSelectTask when the row is clicked', () => {
     const onSelectTask = vi.fn();
-    render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={vi.fn()} onSelectTask={onSelectTask} />);
+    render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} onSelectTask={onSelectTask} />);
     
     fireEvent.click(screen.getByText('Task 1'));
     expect(onSelectTask).toHaveBeenCalledWith(mockTasks[0]);
@@ -50,7 +51,7 @@ describe('TaskList', () => {
 
   it('calls onToggle when the toggle button is clicked', () => {
     const onToggle = vi.fn();
-    render(<TaskList tasks={mockTasks} onToggle={onToggle} onDelete={vi.fn()} onSelectTask={vi.fn()} />);
+    render(<TaskList tasks={mockTasks} onToggle={onToggle} onDelete={vi.fn()} onUpdate={vi.fn()} onSelectTask={vi.fn()} />);
     
     const toggleButtons = screen.getAllByLabelText(/Mark as complete/i);
     fireEvent.click(toggleButtons[0]);
@@ -61,7 +62,7 @@ describe('TaskList', () => {
   it('calls onDelete when the delete button is clicked', () => {
     const onDelete = vi.fn();
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={onDelete} onSelectTask={vi.fn()} />);
+    render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} onSelectTask={vi.fn()} />);
     
     const deleteButtons = screen.getAllByLabelText(/Delete task/i);
     fireEvent.click(deleteButtons[0]);
@@ -72,7 +73,7 @@ describe('TaskList', () => {
   });
 
   it('renders a drag handle for each task', () => {
-    render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={vi.fn()} onSelectTask={vi.fn()} />);
+    render(<TaskList tasks={mockTasks} onToggle={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} onSelectTask={vi.fn()} />);
     
     const dragHandles = screen.getAllByLabelText(/Drag to reorder/i);
     expect(dragHandles).toHaveLength(mockTasks.length);

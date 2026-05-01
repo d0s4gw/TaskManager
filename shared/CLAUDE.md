@@ -5,10 +5,11 @@
 - **Format**: `npm run format` (if available, otherwise follow project style)
 
 ## 🏗 The "Source of Truth" Rules
-- **No Side Effects**: This directory MUST NOT contain any executable logic or side effects. It is for **declarations and schemas only**.
+- **No Side Effects**: This directory MUST NOT contain any executable logic or side effects. It is for **declarations, schemas, and pure helper functions only** (e.g., `gamification.ts` level calculation).
 - **Platform Agnostic**: Do not import any Node-specific (e.g., `fs`, `crypto`) or Browser-specific (e.g., `window`, `document`) APIs here.
-- **Dependency Minimalism**: Keep dependencies to a absolute minimum (ideally only `zod`). 
+- **Dependency Minimalism**: Keep dependencies to an absolute minimum (ideally only `zod`). 
 - **Zod Patterns**: Use `z.infer<typeof schema>` to export types. Do not define manual interfaces for data that is already covered by a Zod schema. Use `z.lazy(() => schema)` for recursive data structures (e.g., nested subtasks).
+- **Key Files**: `task.ts`, `workspace.ts`, `invitation.ts`, `gamification.ts`, `validation.ts`, `api.ts`.
 
 
 ## 🔄 Change Propagation

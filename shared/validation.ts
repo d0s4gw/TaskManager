@@ -45,6 +45,7 @@ export const updateTaskSchema = z.object({
 
 export type CreateTaskDTO = z.infer<typeof createTaskSchema>;
 export type UpdateTaskDTO = z.infer<typeof updateTaskSchema>;
+
 export const userStatsSchema = z.object({
   userId: z.string(),
   points: z.number().min(0),
@@ -56,7 +57,6 @@ export const userStatsSchema = z.object({
 });
 
 export type UserStatsDTO = z.infer<typeof userStatsSchema>;
-
 
 export const createWorkspaceSchema = z.object({
   name: z.string().min(1, 'Workspace name is required').max(50),
