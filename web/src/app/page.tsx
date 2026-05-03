@@ -14,6 +14,7 @@ import { TaskApi } from "@/lib/api";
 import Image from "next/image";
 import confetti from 'canvas-confetti';
 import { StatsHeader } from "@/components/StatsHeader";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   DndContext,
   closestCenter,
@@ -248,6 +249,7 @@ export default function Home() {
                 />
                 <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{user.displayName}</span>
               </div>
+              <ThemeToggle />
               <button 
                 onClick={logout}
                 className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
@@ -258,6 +260,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               {process.env.NODE_ENV === 'development' && (
                 <button 
                   id="mock-login-button"
