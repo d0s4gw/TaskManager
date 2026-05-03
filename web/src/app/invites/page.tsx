@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { TaskApi } from "@/lib/api";
@@ -11,12 +11,23 @@ function AcceptInviteClient() {
   const router = useRouter();
   const { user, loading: authLoading, loginWithGoogle } = useAuth();
   
-  const token = searchParams.get('token') || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null);
+  // Restore token from sessionStorage if the OAuth redirect stripped the query param
+  const token = searchParams.get('token') 
+    || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null)
+    || (typeof window !== 'undefined' ? sessionStorage.getItem('pendingInviteToken') : null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const hasAutoAccepted = useRef(false);
 
   const getApi = useCallback(() => new TaskApi(() => user?.getIdToken() || Promise.resolve(undefined)), [user]);
+
+  // Persist token to sessionStorage so it survives OAuth redirects (especially on mobile)
+  useEffect(() => {
+    if (token && typeof window !== 'undefined') {
+      sessionStorage.setItem('pendingInviteToken', token);
+    }
+  }, [token]);
 
   const handleAccept = async () => {
     if (!token) {
@@ -33,6 +44,10 @@ function AcceptInviteClient() {
     setError(null);
     try {
       await getApi().acceptInvitation(token);
+      // Clean up sessionStorage on success
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('pendingInviteToken');
+      }
       setSuccess(true);
       setTimeout(() => {
         router.push('/');
@@ -44,9 +59,14 @@ function AcceptInviteClient() {
     }
   };
 
+  // Auto-accept after OAuth sign-in completes (no second click required)
   useEffect(() => {
-    // Note: authLoading is already tracked. No need for a separate sync effect.
-  }, [authLoading]);
+    if (user && token && !authLoading && !success && !hasAutoAccepted.current) {
+      hasAutoAccepted.current = true;
+      handleAccept();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, token, authLoading]);
 
   return (
     <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-8 text-center space-y-8 animate-in zoom-in-95 duration-500">

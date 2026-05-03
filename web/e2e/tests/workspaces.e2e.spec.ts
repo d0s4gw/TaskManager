@@ -67,24 +67,17 @@ test.describe('Workspaces & Collaboration', () => {
   });
 
   test('accept invitation landing page', async ({ authenticatedPage: page }) => {
-    // Navigate directly to an invite URL
+    // Navigate directly to an invite URL with a pre-authenticated user.
+    // The new auto-accept behavior means the invitation is accepted immediately
+    // once the user is authenticated and a valid token is present.
     await page.goto('/invites?token=mock-token&agentLogin=true');
     
     // Ensure URL is stable
     await expect(page).toHaveURL(/token=mock-token/);
     await expect(page.getByText("You're Invited!")).toBeVisible();
     
-    // Wait for mock user to be active
-    await expect(page.getByText('agent@test.com')).toBeVisible({ timeout: 10000 });
-    
-    const acceptButton = page.getByRole('button', { name: 'Accept Invitation & Join' });
-    await expect(acceptButton).toBeVisible();
-    await expect(acceptButton).toBeEnabled();
-    
-    // Accept (will use mocked response)
-    await acceptButton.click();
-    
-    // Success message - should appear after API call
+    // With auto-accept, the invitation should be accepted automatically
+    // and show the success message without requiring a button click.
     await expect(page.getByText('Welcome aboard!')).toBeVisible({ timeout: 15000 });
     
     // Redirection to dashboard
