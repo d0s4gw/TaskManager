@@ -12,6 +12,7 @@
     "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace web\"",
     "install-all": "npm install",
     "test": "npm test --workspaces",
+    "skeleton": "node scripts/generate-skeleton.js",
     "prepare": "command -v husky >/dev/null && husky || true"
   },
   "devDependencies": {

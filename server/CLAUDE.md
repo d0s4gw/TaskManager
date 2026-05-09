@@ -23,3 +23,7 @@
 - **Service**: `GamificationService` awards points on task/subtask completion. Uses `IUserStatsRepository`.
 - **Stats Route**: `/api/stats` (GET) returns user stats. Uses `InProcessUserStatsRepository` in dev.
 - **Shared Types**: `shared/gamification.ts` defines `UserStats`, `LEVEL_MAP`, and helper functions.
+
+---
+## 📚 References
+- **`blueprints/server.md`**: Definitive server source code and middleware config.

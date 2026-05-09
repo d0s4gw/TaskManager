@@ -61,3 +61,14 @@ This file contains critical patterns for the TaskManager project. For the histor
 - **Frontend**: Listens on port `3000`. Next.js proxies `/api` to `localhost:8080`.
 - **Auth Trapdoor**: In `development` mode, you can use the `?agentLogin=true` query parameter to auto-authenticate as "Agent Gemini". This bypasses the Google Login popup and is optimized for AI agent testing.
 - **E2E Note**: E2E tests mock both Firebase Auth and the Task API at the network layer. No `.env.local` or running server is required for Playwright tests — it starts the Next.js dev server automatically.
+
+## 🏁 Token Stewardship & AI Efficiency
+To keep agent quality high and costs low, follow these protocols:
+- **Skeletonize First**: Use `npm run skeleton <path>` to explore code interfaces without loading full implementations.
+- **Modular Blueprints**: Only read the relevant file in `blueprints/` (e.g., `server.md`) for the current task.
+- **Checkpointing**: Before ending a session, create a `walkthrough.md` artifact summarizing:
+  1. What was accomplished.
+  2. The current state of the system.
+  3. Pending tasks.
+- **Context Reset**: Start new sessions by reading the latest `walkthrough.md`. This resets the "Context Debt" from long chat histories.
+- **Artifact Usage**: Save complex analysis, audits, or reports as artifacts to keep them out of the conversational context window.

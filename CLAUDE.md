@@ -24,10 +24,12 @@
 - **Shipping Guard**: Before confirming readiness to deploy, you **MUST** run the "Test All" and "Test Web E2E" commands.
 
 ## 📚 References
-- **`TEMPLATE_PROMPT.md`**: The definitive blueprint for the entire system architecture.
-- **`DEVELOPER_NOTES.md`**: Deep-dives on OTel, App Check, and Project History.
-- **`server/CLAUDE.md`**: Backend-specific patterns and repository rules.
-- **`web/CLAUDE.md`**: Frontend-specific conventions and UI standards.
-- **`mobile/CLAUDE.md`**: Flutter/Dart models and state management rules.
-- **`shared/CLAUDE.md`**: Type-safety and "Source of Truth" protocols.
-- **`terraform/CLAUDE.md`**: Infrastructure safety rules and workspace commands.
+- **`blueprints/`**: Modular system blueprints (server, web, infra, shared).
+- **`DEVELOPER_NOTES.md`**: Deep-dives on OTel, App Check, and Token Stewardship.
+- **`scripts/generate-skeleton.js`**: Use for high-efficiency code exploration.
+
+## 🏁 Token Stewardship & Checkpointing
+- **Modular Load**: Only read the specific blueprint relevant to your task.
+- **Skeletons First**: Use `npm run skeleton <path>` to understand a component's interface before reading full implementation.
+- **Checkpointing**: Before ending a long session, create a `walkthrough.md` artifact. Start the next session by reading that artifact to reset history debt.
+- **Artifacts**: Use artifacts for reports/audits to keep them out of the chat history context.

@@ -18,3 +18,7 @@ This version of Next.js contains breaking changes from standard training data.
 - Use `LabelInput` for tag-style inputs. Color mapping via `lib/colors.ts`.
 - Use `NestedTaskItem` for recursive subtask rendering.
 - Use `StatsHeader` for gamification display (polls `/api/stats`).
+
+---
+## 📚 References
+- **`blueprints/web.md`**: Definitive web context, Firebase setup, and Auth provider code.
