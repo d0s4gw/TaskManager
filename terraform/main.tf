@@ -333,3 +333,34 @@ resource "google_monitoring_dashboard" "dashboard" {
 EOF
 }
 
+# 14. Artifact Registry — gcr.io Docker Repository
+# This repo was auto-created by Cloud Build and must be imported into state:
+#   terraform import google_artifact_registry_repository.gcr \
+#     projects/<PROJECT_ID>/locations/us/repositories/gcr.io
+resource "google_artifact_registry_repository" "gcr" {
+  project       = var.project_id
+  location      = "us"
+  repository_id = "gcr.io"
+  format        = "DOCKER"
+
+  cleanup_policy_dry_run = false
+
+  # Keep only the 2 most recent versions
+  cleanup_policies {
+    id     = "keep-recent-2"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 2
+    }
+  }
+
+  # Delete everything older than 7 days (safety net)
+  cleanup_policies {
+    id     = "delete-old"
+    action = "DELETE"
+    condition {
+      older_than = "604800s" # 7 days
+    }
+  }
+}
+

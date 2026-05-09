@@ -1,4 +1,4 @@
-# TaskManager "BULLETPROOF SYSTEM BLUEPRINT" (v5.2)
+# TaskManager "BULLETPROOF SYSTEM BLUEPRINT" (v6.0)
 
 This document is the definitive source of truth for replicating the TaskManager architecture. It contains the **full source code** for every structural and infrastructure component of the system. 
 
@@ -14,6 +14,22 @@ Use this prompt to build a production-grade 3-tier application on GCP with zero 
 3.  **Auth Bootstrap**: Create a `github-deployer` Service Account in both projects. Grant `roles/owner` temporarily. Download JSON key for staging and save as GitHub Secret `GOOGLE_CREDENTIALS`.
 4.  **Firebase & API Enablement**: Link Firebase to both projects. Enable Auth (Google), Firestore (Native), and generate App Check (ReCaptcha v3) site keys. **Critical APIs**: Ensure `iamcredentials`, `run`, `firestore`, and `artifactregistry` are enabled.
 5.  **App Check Debug Setup**: In the Firebase Console (App Check > Apps), generate a **Debug Token** for your development environment. Save this as `NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN` in your `.env.local` or Secret Manager.
+6.  **GitHub Secrets**: Configure the following secrets in your GitHub repository (Settings > Secrets and variables > Actions):
+
+| Secret | Description | Example |
+|---|---|---|
+| `GCP_PROJECT_ID_STAGING` | Staging project ID | `${app}-staging-123456` |
+| `GCP_PROJECT_ID_PROD` | Production project ID | `${app}-prod-123456` |
+| `WIF_PROVIDER_STAGING` | WIF provider resource name (staging) | `projects/.../providers/github-deploy-provider` |
+| `WIF_PROVIDER_PROD` | WIF provider resource name (prod) | `projects/.../providers/github-deploy-provider` |
+| `WIF_SERVICE_ACCOUNT_STAGING` | Deployer SA email (staging) | `github-deployer@${app}-staging.iam.gserviceaccount.com` |
+| `WIF_SERVICE_ACCOUNT_PROD` | Deployer SA email (prod) | `github-deployer@${app}-prod.iam.gserviceaccount.com` |
+| `GCP_BILLING_ACCOUNT` | Billing account ID | `01ABCD-2EFGH3-4IJKL5` |
+| `FIREBASE_API_KEY_STAGING` | Firebase web API key (staging) | From Firebase Console |
+| `FIREBASE_API_KEY_PROD` | Firebase web API key (prod) | From Firebase Console |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | reCAPTCHA v3 site key | From Firebase App Check |
+
+  Configure as **variables** (not secrets): `ALERT_EMAIL`.
 
 ---
 
@@ -24,12 +40,11 @@ Use this prompt to build a production-grade 3-tier application on GCP with zero 
 {
   "name": "server",
   "version": "1.0.0",
-  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "rimraf dist && tsc",
-    "start": "node dist/index.js",
-    "dev": "NODE_ENV=development ts-node src/index.ts",
+    "start": "node dist/server/src/index.js",
+    "dev": "NODE_ENV=development ts-node -r tsconfig-paths/register src/index.ts",
     "test": "jest",
     "lint": "eslint . --ext .ts",
     "health": "curl http://localhost:8080/health"
@@ -44,8 +59,10 @@ Use this prompt to build a production-grade 3-tier application on GCP with zero 
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.4.1",
     "express-winston": "^4.2.0",
     "firebase-admin": "^13.8.0",
+    "module-alias": "^2.2.3",
     "winston": "^3.19.0",
     "zod": "^4.3.6"
   },
@@ -57,40 +74,74 @@ Use this prompt to build a production-grade 3-tier application on GCP with zero 
     "@types/node": "^25.6.0",
     "@types/supertest": "^7.2.0",
     "eslint": "^9.39.4",
-    "globals": "^16.0.0",
+    "globals": "^17.5.0",
     "jest": "^30.3.0",
     "rimraf": "^6.1.3",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.0"
   }
 }
 ```
 
-### 2. Server: `Dockerfile` (Multi-Stage)
+### 2. Server: `Dockerfile` (Multi-Stage, Workspace-Aware)
 ```dockerfile
+# Stage 1: Build
 FROM node:24-slim AS builder
 WORKDIR /app
-COPY shared ./shared
+
+# Copy root and workspace package files
+COPY package*.json ./
+COPY shared/package*.json ./shared/
 COPY server/package*.json ./server/
+
+# Install dependencies for server and shared workspaces
+RUN npm ci --include=dev
+
+# Copy source code
+COPY shared ./shared
+COPY server ./server
+
+# Build the server
 WORKDIR /app/server
-RUN npm ci
-COPY server/tsconfig.json ./
-COPY server/src ./src
 RUN npm run build
 
+# Stage 2: Production
 FROM node:24-slim
 WORKDIR /app/server
-COPY server/package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/server/dist ./dist
-COPY --from=builder /app/shared /app/shared
+
+# Copy package files for production install
+COPY --from=builder /app/package*.json /app/
+COPY --from=builder /app/shared/package*.json /app/shared/
+COPY --from=builder /app/server/package*.json /app/server/
+
+# Install production dependencies
+WORKDIR /app
+RUN npm ci --omit=dev --workspace server --workspace shared
+
+# Copy built assets from builder
+COPY --from=builder /app/server/dist /app/server/dist
+
 ENV NODE_ENV=production
 ENV PORT=8080
+WORKDIR /app/server
 EXPOSE 8080
-CMD ["node", "dist/server/src/index.js"]
+CMD ["npm", "start"]
+```
+
+### 2b. Shared: `package.json`
+```json
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}
 ```
 
 ### 3. Server: `eslint.config.js` (Flat Config)
@@ -240,7 +291,26 @@ process.on('SIGTERM', () => {
 });
 ```
 
-### 3. Server: Request ID (`server/src/middleware/request-id.ts`)
+### 3b. Server: Logger (`server/src/logger.ts`)
+```typescript
+import winston from 'winston';
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  defaultMeta: { service: '${app}-api' },
+  transports: [
+    new winston.transports.Console(),
+  ],
+});
+
+export default logger;
+```
+
+### 3c. Server: Request ID (`server/src/middleware/request-id.ts`)
 ```typescript
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
@@ -264,15 +334,27 @@ export interface AuthRequest extends Request { user?: admin.auth.DecodedIdToken;
 
 export const verifyToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
+  if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ success: false, error: { code: 'unauthorized', message: 'Missing or invalid token' } });
   const token = authHeader.split(' ')[1];
+
+  // E2E Test / Local Dev Bypass
+  if (process.env.NODE_ENV === 'development' && token === 'e2e-mock-firebase-id-token') {
+    req.user = {
+      uid: 'e2e-user-123', email: 'agent@test.com', name: 'Agent',
+      auth_time: Math.floor(Date.now() / 1000), iss: 'mock', aud: 'mock',
+      sub: 'e2e-user-123', iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      firebase: { identities: {}, sign_in_provider: 'google.com' }
+    } as admin.auth.DecodedIdToken;
+    return next();
+  }
 
   // App Check Verification (Production)
   if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test') {
     const appCheckToken = req.headers['x-firebase-appcheck'] as string;
-    if (!appCheckToken) return res.status(401).json({ success: false, error: { message: 'Missing App Check token' } });
+    if (!appCheckToken) return res.status(401).json({ success: false, error: { code: 'unauthorized', message: 'Missing App Check token' } });
     try { await admin.appCheck().verifyToken(appCheckToken); }
-    catch (e) { return res.status(401).json({ success: false, error: { message: 'Invalid App Check token' } }); }
+    catch (e) { return res.status(401).json({ success: false, error: { code: 'unauthorized', message: 'Invalid App Check token' } }); }
   }
 
   try {
@@ -280,7 +362,7 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
     req.user = decodedToken;
     next();
   } catch (error) {
-    return res.status(401).json({ success: false, error: { message: 'Token verification failed' } });
+    return res.status(401).json({ success: false, error: { code: 'unauthorized', message: 'Token verification failed' } });
   }
 };
 ```
@@ -446,7 +528,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
 
 resource "google_service_account" "server_sa" {
   project = var.project_id
-  account_id = "task-manager-server"
+  account_id = "${app}-server"
 }
 
 resource "google_project_iam_member" "server_roles" {
@@ -468,7 +550,7 @@ moved { from = google_iam_workload_identity_pool.github_pool[0]; to = google_iam
 ### 3. Terraform: `main.tf` (Cloud Run & Direct Access)
 ```hcl
 resource "google_cloud_run_v2_service" "server" {
-  name     = "task-manager-server"
+  name     = "${app}-server"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
@@ -492,83 +574,300 @@ output "server_url" {
 }
 ```
 
+### 4. Terraform: `main.tf` (Artifact Registry Cleanup)
+The `gcr.io` repo is auto-created by Cloud Build on first image push. Import it into Terraform state and add cleanup policies to stay under the **0.5 GB AR free tier**.
+```hcl
+# Import existing repo: terraform import google_artifact_registry_repository.gcr \
+#   projects/<PROJECT_ID>/locations/us/repositories/gcr.io
+resource "google_artifact_registry_repository" "gcr" {
+  project       = var.project_id
+  location      = "us"
+  repository_id = "gcr.io"
+  format        = "DOCKER"
+
+  cleanup_policy_dry_run = false
+
+  cleanup_policies {
+    id     = "keep-recent-2"
+    action = "KEEP"
+    most_recent_versions { keep_count = 2 }
+  }
+
+  cleanup_policies {
+    id     = "delete-old"
+    action = "DELETE"
+    condition { older_than = "604800s" } # 7 days
+  }
+}
+```
+
+### 5. Terraform: `backend.tf`
+```hcl
+terraform {
+  backend "gcs" {
+    bucket = "${app}-tfstate"
+    prefix = "terraform/state"
+  }
+}
+```
+
+### 6. Terraform: `variables.tf`
+```hcl
+variable "project_id" {
+  description = "The GCP project ID"
+  type        = string
+}
+
+variable "region" {
+  description = "The GCP region"
+  type        = string
+  default     = "us-central1"
+}
+
+variable "environment" {
+  description = "The environment name (staging or prod)"
+  type        = string
+}
+
+variable "github_repo" {
+  description = "The GitHub repository in 'owner/repo' format"
+  type        = string
+}
+
+variable "billing_account" {
+  description = "The billing account ID for budget alerts"
+  type        = string
+}
+
+variable "alert_email" {
+  description = "The email address for monitoring alerts"
+  type        = string
+}
+```
+
+### 7. Terraform: `environments/staging.tfvars`
+```hcl
+project_id  = "${app}-staging-XXXXXX"
+environment = "staging"
+region      = "us-central1"
+github_repo = "<github-owner>/${app}"
+```
+
+---
+
+## V.b. THE CONNECTIVE TISSUE (FIREBASE CONFIG)
+
+### 1. Root: `firebase.json`
+```json
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": "web/out",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "${app}-server",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
+```
+
+### 2. Root: `firestore.rules`
+Generic pattern: authenticated reads scoped to `userId`, all writes handled by backend API (Admin SDK bypasses rules). Extend the `read` rule when adding sharing features.
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{collection}/{docId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+  }
+}
+```
+
+### 3. Root: `firestore.indexes.json`
+Start empty — add composite indexes reactively as query patterns emerge. Firestore will provide direct links to create needed indexes when queries require them.
+```json
+{
+  "indexes": [],
+  "fieldOverrides": []
+}
+```
+
 ---
 
 ## VI. THE PULSE (CI/CD)
 
 ### 1. `.github/workflows/deploy.yml`
 ```yaml
-name: Deploy
-on: { push: { branches: [ main ] } }
-permissions: { contents: read, id-token: write }
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
 jobs:
   test-server:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }
-      - name: Install
-        run: cd server && npm ci
-      - name: Lint
-        run: cd server && npm run lint
-      - name: Audit
-        run: cd server && npm audit --audit-level=high
-      - name: Test
-        run: cd server && npm test
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with: { node-version: '24' }
+    - name: Install Server Dependencies
+      run: cd server && npm ci
+    - name: Run Server Lint
+      run: cd server && npm run lint
+    - name: Run Server Audit
+      run: cd server && npm audit --audit-level=high
+    - name: Run Server Tests
+      run: cd server && npm test
 
   test-web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }
-      - name: Install
-        run: cd web && npm ci
-      - name: Lint
-        run: cd web && npm run lint
-      - name: Audit
-        run: cd web && npm audit --audit-level=high
-      - name: Test
-        run: cd web && npm test
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with: { node-version: '24' }
+    - name: Install Web Dependencies
+      run: cd web && npm ci
+    - name: Run Web Lint
+      run: cd web && npm run lint
+    - name: Run Web Audit
+      run: cd web && npm audit --audit-level=high
+    - name: Run Web Tests
+      run: cd web && npm test
 
-  deploy:
-    needs: [test-server, test-web]
+  test-e2e:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    needs: [test-server, test-web]
     steps:
-      - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-      - name: Terraform
-        run: |
-          cd terraform
-          terraform init
-          terraform workspace select staging || terraform workspace new staging
-          terraform apply -var-file=environments/staging.tfvars -auto-approve
-      - name: Deploy
-        run: |
-          gcloud builds submit . --config cloudbuild.yaml
-          gcloud run deploy task-manager-server --image gcr.io/${{ env.PROJECT_ID }}/server --service-account task-manager-server@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with: { node-version: '24' }
+    - name: Install Web Dependencies
+      run: cd web && npm ci
+    - name: Install Playwright Browsers
+      run: cd web && npx playwright install --with-deps chromium
+    - name: Run E2E Tests
+      run: cd web && npx playwright test
+    - name: Upload Playwright Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: web/playwright-report/
+        retention-days: 14
+
+  validate-terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: hashicorp/setup-terraform@v3
+    - name: Terraform Format Check
+      run: terraform -chdir=terraform fmt -check -recursive -diff
+    - name: Terraform Init (backend=false)
+      run: terraform -chdir=terraform init -backend=false
+    - name: Terraform Validate
+      run: terraform -chdir=terraform validate
+
+  deploy-staging:
+    name: Deploy to Staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-server, test-web, test-e2e, validate-terraform]
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_STAGING }}
+      REGION: 'us-central1'
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with: { node-version: '24' }
+    - name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: ${{ secrets.WIF_PROVIDER_STAGING }}
+        service_account: ${{ secrets.WIF_SERVICE_ACCOUNT_STAGING }}
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+    - uses: hashicorp/setup-terraform@v3
+    - name: 'Terraform Plan & Apply'
+      run: |
+        cd terraform
+        terraform init
+        terraform workspace select staging || terraform workspace new staging
+        terraform apply -var-file=environments/staging.tfvars \
+          -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
+          -var="alert_email=${{ vars.ALERT_EMAIL }}" \
+          -auto-approve
+    - name: 'Build and Deploy Server'
+      run: |
+        gcloud builds submit . --config cloudbuild.yaml
+        gcloud run deploy ${app}-server \
+          --image gcr.io/$PROJECT_ID/server \
+          --platform managed \
+          --region $REGION \
+          --service-account ${app}-server@$PROJECT_ID.iam.gserviceaccount.com \
+          --ingress all
+    - name: 'Deploy Web to Firebase'
+      run: |
+        cd web
+        npm ci
+        npm run build
+        cd ..
+        npx firebase-tools deploy --only hosting,firestore --project $PROJECT_ID
+      env:
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY_STAGING }}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID_STAGING }}
+        NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ secrets.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
 ```
 
-### 2. Root: `package.json` (Husky & Guardrails)
+### 2. Root: `package.json` (Workspaces & Guardrails)
 ```json
 {
-  "name": "root",
+  "name": "${app}-root",
+  "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "server",
+    "web",
+    "shared"
+  ],
   "scripts": {
-    "prepare": "husky"
+    "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace web\"",
+    "install-all": "npm install",
+    "test": "npm test --workspaces",
+    "prepare": "command -v husky >/dev/null && husky || true"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "husky": "^9.1.7",
-    "lint-staged": "^16.4.0"
+    "lint-staged": "^16.4.0",
+    "zod": "^4.3.6"
   },
   "lint-staged": {
-    "server/src/**/*.ts": ["npm run lint --prefix server"],
-    "web/src/**/*.{ts,tsx}": ["npm run lint --prefix web"],
+    "server/src/**/*.ts": ["npm run lint --workspace server"],
+    "web/src/**/*.{ts,tsx}": ["npm run lint --workspace web"],
     "terraform/**/*.tf": ["terraform -chdir=terraform fmt"]
   }
 }
@@ -577,7 +876,7 @@ jobs:
 ---
 
 ## VII. EXECUTION STRATEGY
-1.  **Clone structures exactly**.
+1.  **Clone structures exactly**. Use npm workspaces — `npm install` at root resolves all workspace dependencies.
 2.  **Ensure OTel is Line 1** of server `index.ts`.
 3.  **Ensure Proxying** is via `firebase.json` rewrites.
 4.  **Verify WIF** project numbers and repository name in member bindings.
@@ -585,3 +884,4 @@ jobs:
 6.  **IAM Propagation Warm-up**: After Terraform apply or IAM changes, **sleep 60** before attempting deployment or API calls to account for eventual consistency.
 7.  **Audit** OTel init, JSON logging, and RequestID propagation.
 8.  **WIF Troubleshooting**: If you get a 403 on `gcloud auth`, verify that the `github-pool` is active and the repository name matches **exactly** (case-sensitive).
+9.  **Artifact Registry Import**: After the first Cloud Build push, import the auto-created `gcr.io` repo into Terraform state before running `terraform apply`: `terraform import google_artifact_registry_repository.gcr projects/<PROJECT_ID>/locations/us/repositories/gcr.io`
